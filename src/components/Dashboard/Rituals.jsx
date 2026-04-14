@@ -1,6 +1,6 @@
 import React from 'react';
 import GlassCard from '../UI/GlassCard';
-import { Drop, Leaf, MoonZ } from '@phosphor-icons/react';
+import { Drop, Leaf, MoonStars } from '@phosphor-icons/react';
 import { motion } from 'framer-motion';
 
 const Rituals = ({ delay = 0 }) => {
@@ -32,7 +32,7 @@ const Rituals = ({ delay = 0 }) => {
 
         <motion.div whileHover={{ scale: 1.02 }} className="bg-kawaii-bg rounded-2xl p-3 flex items-center gap-4 sticker-border cursor-pointer">
           <div className="bg-kawaii-lilac/20 text-kawaii-lilac p-2 rounded-xl">
-             <MoonZ weight="fill" className="w-6 h-6" />
+             <MoonStars weight="fill" className="w-6 h-6" />
           </div>
           <div>
             <h4 className="font-bold text-gray-800 text-sm">Rest Log</h4>

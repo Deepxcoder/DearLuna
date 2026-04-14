@@ -1,14 +1,17 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { BookOpen, CalendarBlank, Drop, UsersThree, Gear } from '@phosphor-icons/react';
+import { NavLink } from 'react-router-dom';
+import { BookOpen, CalendarBlank, Drop, UsersThree, Gear, House } from '@phosphor-icons/react';
 
 const Sidebar = () => {
+  // Configured to match our Router paths
   const navItems = [
-    { name: 'Journal', icon: BookOpen, active: true },
-    { name: 'Calendar', icon: CalendarBlank, active: false },
-    { name: 'Cycle', icon: Drop, active: false },
-    { name: 'Community', icon: UsersThree, active: false },
-    { name: 'Settings', icon: Gear, active: false },
+    { name: 'Home', path: '/dashboard', icon: House },
+    { name: 'Journal', path: '/journal', icon: BookOpen },
+    { name: 'Calendar', path: '/calendar', icon: CalendarBlank },
+    { name: 'Cycle', path: '/cycle', icon: Drop },
+    { name: 'Community', path: '/community', icon: UsersThree },
+    { name: 'Settings', path: '/settings', icon: Gear },
   ];
 
   return (
@@ -30,24 +33,28 @@ const Sidebar = () => {
         {/* Navigation */}
         <nav className="flex-1 flex flex-col gap-3">
           {navItems.map((item) => (
-            <button 
+            <NavLink 
               key={item.name}
-              className={`flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 ${
-                item.active 
+              to={item.path}
+              className={({ isActive }) => `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 ${
+                isActive 
                   ? 'bg-white shadow-sticker text-kawaii-mint' 
                   : 'text-gray-500 hover:bg-white/50 hover:text-gray-800'
               }`}
             >
-              <item.icon weight={item.active ? "duotone" : "regular"} className="w-6 h-6" />
-              <span className="font-semibold text-sm">{item.name}</span>
-            </button>
+              {({ isActive }) => (
+                <>
+                  <item.icon weight={isActive ? "duotone" : "regular"} className="w-6 h-6" />
+                  <span className="font-semibold text-sm">{item.name}</span>
+                </>
+              )}
+            </NavLink>
           ))}
         </nav>
 
         {/* Bottom User Area */}
         <div className="mt-auto bg-white/60 rounded-2xl p-3 flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-kawaii-sakura/30 overflow-hidden">
-             {/* cute generic avatar placeholder */}
              <div className="w-full h-full bg-kawaii-sakura flex items-center justify-center">
                  <span className="text-white font-bold">L</span>
              </div>
