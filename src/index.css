@@ -3,27 +3,64 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  /* Default: Sakura Dream */
+  --kawaii-bg: #FFF5F8;
+  --kawaii-pink: #FFD1DC;
+  --kawaii-sakura: #FFB7C5;
+  --kawaii-lilac: #E0BBE4;
+  --kawaii-mint: #957DAD;
+  --kawaii-blue: #D291BC;
+  --kawaii-cream: #FEC8D8;
+  --kawaii-earth: #4A3525;
+  --kawaii-earthLight: #7A593E;
+  --kawaii-yellow: #FFF3CD;
+  --kawaii-card-bg: rgba(255, 255, 255, 0.4);
+  --kawaii-border: rgba(255, 255, 255, 0.6);
+  --kawaii-shadow: rgba(0, 0, 0, 0.03);
+  --kawaii-gradient-start: #FFD1DC;
+  --kawaii-gradient-end: #E0BBE4;
+}
+
 @layer base {
   body {
-    @apply bg-kawaii-bg text-kawaii-earth font-body min-h-screen antialiased;
-    background-image: radial-gradient(circle at 10% 20%, rgba(255, 237, 240, 0.8), transparent 50%),
-                      radial-gradient(circle at 90% 80%, rgba(255, 243, 245, 0.8), transparent 50%);
+    background-color: var(--kawaii-bg);
+    color: var(--kawaii-earth);
+    @apply font-body min-h-screen antialiased;
+    background-image: 
+      radial-gradient(circle at 10% 20%, var(--kawaii-pink), transparent 50%),
+      radial-gradient(circle at 90% 80%, var(--kawaii-lilac), transparent 50%);
     background-attachment: fixed;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 }
 
-/* ─── Global Dark Theme ───────────────────────────────────────────────────── */
-html.theme-dark body {
-  background-color: #05071a;
-  color: #eef1ff;
-  background-image:
-    radial-gradient(circle at 10% 20%, rgba(100, 88, 190, 0.28), transparent 42%),
-    radial-gradient(circle at 86% 24%, rgba(116, 166, 255, 0.22), transparent 36%),
-    radial-gradient(circle at 74% 76%, rgba(129, 99, 212, 0.2), transparent 40%),
-    linear-gradient(180deg, #090b25 0%, #080b29 55%, #06071f 100%);
+/* ─── 1. Sakura Dream (Default) ────────────────────────────────────────── */
+.theme-Sakura {
+  /* Inherits from :root */
 }
 
-html.theme-dark body::before {
+/* ─── 2. Midnight Glow ────────────────────────────────────────────────── */
+html.theme-dark, .theme-Midnight {
+  --kawaii-bg: #05071a;
+  --kawaii-pink: #7b62d9;
+  --kawaii-sakura: #8f6fff;
+  --kawaii-lilac: #5344c4;
+  --kawaii-mint: #4b3ba1;
+  --kawaii-blue: #6350d6;
+  --kawaii-cream: #2a2d5a;
+  --kawaii-earth: #f2f1ff;
+  --kawaii-earthLight: #b7b8d9;
+  --kawaii-yellow: #2d316e;
+  --kawaii-card-bg: rgba(20, 24, 61, 0.72);
+  --kawaii-border: rgba(173, 181, 255, 0.22);
+  --kawaii-shadow: rgba(8, 12, 46, 0.45);
+  --kawaii-gradient-start: #8f6fff;
+  --kawaii-gradient-end: #5344c4;
+}
+
+/* Add stars to Midnight theme */
+html.theme-dark body::before, .theme-Midnight body::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -39,80 +76,70 @@ html.theme-dark body::before {
   opacity: 0.9;
 }
 
-html.theme-dark .text-kawaii-earth {
-  color: #f2f1ff !important;
+/* ─── 3. Ocean Breeze ─────────────────────────────────────────────────── */
+.theme-Ocean {
+  --kawaii-bg: #F0F8FA;
+  --kawaii-pink: #82C0CC;
+  --kawaii-sakura: #70A9A1;
+  --kawaii-lilac: #A3C4BC;
+  --kawaii-mint: #4895EF;
+  --kawaii-blue: #4CC9F0;
+  --kawaii-cream: #E0FBFC;
+  --kawaii-earth: #1A3A40;
+  --kawaii-earthLight: #3D5A61;
+  --kawaii-yellow: #BEE9E8;
+  --kawaii-card-bg: rgba(255, 255, 255, 0.55);
+  --kawaii-border: rgba(130, 192, 204, 0.3);
+  --kawaii-gradient-start: #82C0CC;
+  --kawaii-gradient-end: #A3C4BC;
 }
 
-html.theme-dark .text-kawaii-earthLight {
-  color: #b7b8d9 !important;
+/* ─── 4. Forest Mist ──────────────────────────────────────────────────── */
+.theme-Forest {
+  --kawaii-bg: #F2F4EF;
+  --kawaii-pink: #A3B18A;
+  --kawaii-sakura: #588157;
+  --kawaii-lilac: #DAD7CD;
+  --kawaii-mint: #3A606E;
+  --kawaii-blue: #344E41;
+  --kawaii-cream: #E9EDC9;
+  --kawaii-earth: #344E41;
+  --kawaii-earthLight: #588157;
+  --kawaii-yellow: #CCD5AE;
+  --kawaii-card-bg: rgba(255, 255, 255, 0.55);
+  --kawaii-border: rgba(163, 177, 138, 0.3);
+  --kawaii-gradient-start: #A3B18A;
+  --kawaii-gradient-end: #DAD7CD;
 }
 
-html.theme-dark .bg-kawaii-bg {
-  background-color: #0f1235 !important;
+/* Global variable-aware overrides */
+.text-kawaii-earth { color: var(--kawaii-earth) !important; }
+.text-kawaii-earthLight { color: var(--kawaii-earthLight) !important; }
+.bg-kawaii-bg { background-color: var(--kawaii-bg) !important; }
+.bg-kawaii-pink { background-color: var(--kawaii-pink) !important; }
+
+.from-kawaii-pink {
+  --tw-gradient-from: var(--kawaii-gradient-start) var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: var(--kawaii-bg) var(--tw-gradient-to-position) !important;
+  --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important;
+}
+.to-kawaii-lilac {
+  --tw-gradient-to: var(--kawaii-gradient-end) var(--tw-gradient-to-position) !important;
 }
 
-html.theme-dark .bg-kawaii-pink {
-  background-color: #7b62d9 !important;
-  color: #ffffff !important;
+/* Components using the card/border variables */
+.bg-white, [class*="bg-white/"] {
+  background-color: var(--kawaii-card-bg) !important;
 }
-
-html.theme-dark .from-kawaii-pink {
-  --tw-gradient-from: #8f6fff var(--tw-gradient-from-position) !important;
+[class*="border-white"] {
+  border-color: var(--kawaii-border) !important;
 }
-
-html.theme-dark .to-kawaii-lilac {
-  --tw-gradient-to: #5344c4 var(--tw-gradient-to-position) !important;
+[class*="shadow-"], .shadow-sm, .shadow-soft {
+  box-shadow: 0 10px 40px var(--kawaii-shadow) !important;
 }
-
-html.theme-dark .bg-white,
-html.theme-dark [class*="bg-white/"] {
-  background-color: rgba(20, 24, 61, 0.72) !important;
-}
-
-html.theme-dark [class*="border-white"] {
-  border-color: rgba(173, 181, 255, 0.22) !important;
-}
-
-html.theme-dark [class*="shadow-"],
-html.theme-dark .shadow-sm,
-html.theme-dark .shadow-soft {
-  box-shadow: 0 14px 40px rgba(8, 12, 46, 0.45) !important;
-}
-
-html.theme-dark .sticker-chip {
-  background: rgba(121, 128, 210, 0.18) !important;
-  border-color: rgba(198, 204, 255, 0.5) !important;
-  box-shadow: 0 8px 24px rgba(7, 10, 40, 0.5) !important;
-}
-
-.dark-celestial {
-  display: none;
-}
-
-html.theme-dark .dark-celestial {
-  display: block;
-  position: absolute;
-  z-index: 2;
-  pointer-events: none;
-  text-shadow: 0 0 14px rgba(214, 223, 255, 0.75);
-  opacity: 0.85;
-}
-
-html.theme-dark .dark-celestial-1 { top: 18px; right: 32%; font-size: 1.2rem; }
-html.theme-dark .dark-celestial-2 { bottom: 20px; left: 6%; font-size: 2rem; }
-html.theme-dark .dark-celestial-3 { top: 28%; right: 4%; font-size: 1.35rem; }
-html.theme-dark .dark-celestial-4 { bottom: 30%; left: 46%; font-size: 1rem; }
-
-html.theme-dark .habits-page .daily-reflection-card {
-  background-color: rgba(46, 38, 84, 0.55) !important;
-  border-color: rgba(174, 183, 255, 0.2) !important;
-}
-
-html.theme-dark .habits-page .water-tracker-card,
-html.theme-dark .habits-page .pet-zen-card,
-html.theme-dark .habits-page .habit-card-shell {
-  background-color: rgba(25, 30, 76, 0.62) !important;
-  border-color: rgba(174, 183, 255, 0.2) !important;
+.sticker-chip {
+  background-color: var(--kawaii-card-bg) !important;
+  border-color: var(--kawaii-border) !important;
 }
 
 @layer utilities {
@@ -171,11 +198,8 @@ html.theme-dark .habits-page .habit-card-shell {
   }
 }
 
-/* ─── Device-Scale Utility Classes ───────────────────────────────────────────
-   Consume CSS custom properties injected by useDeviceScale.js at runtime.
-   ────────────────────────────────────────────────────────────────────────── */
+/* ─── Device-Scale Utility Classes ─────────────────────────────────────────── */
 @layer utilities {
-  /* Typography */
   .ui-text-xs   { font-size: var(--ui-font-xs,   9px); }
   .ui-text-sm   { font-size: var(--ui-font-sm,   11px); }
   .ui-text-base { font-size: var(--ui-font-base, 14px); }
@@ -184,7 +208,6 @@ html.theme-dark .habits-page .habit-card-shell {
   .ui-text-2xl  { font-size: var(--ui-font-2xl,  28px); }
   .ui-text-3xl  { font-size: var(--ui-font-3xl,  36px); }
 
-  /* Spacing */
   .ui-p         { padding: var(--ui-card-pad,  22px); }
   .ui-p-sm      { padding: var(--ui-space-4,   16px); }
   .ui-gap-2     { gap: var(--ui-space-2, 8px); }
@@ -193,18 +216,15 @@ html.theme-dark .habits-page .habit-card-shell {
   .ui-mb-4      { margin-bottom: var(--ui-space-4, 16px); }
   .ui-mb-6      { margin-bottom: var(--ui-space-6, 24px); }
 
-  /* Shape */
   .ui-rounded    { border-radius: var(--ui-radius, 32px); }
   .ui-rounded-sm { border-radius: calc(var(--ui-radius, 32px) * 0.6); }
 
-  /* Dial sizing */
   .ui-cycle-dial {
     width:  var(--ui-cycle-dial, 220px);
     height: var(--ui-cycle-dial, 220px);
     flex-shrink: 0;
   }
 
-  /* Icon sizing */
   .ui-icon {
     width:  var(--ui-icon-size, 20px);
     height: var(--ui-icon-size, 20px);

@@ -180,14 +180,26 @@ export const UserProfileProvider = ({ children }) => {
     fetchDailyLog(user.uid, currentDate);
   }, [currentDate, user, isGuest, isInitializing]);
 
-  // ── Theme sync (profile setting -> global class) ─────────────────────────
+  // ── Theme sync (profile.settings.theme -> global class) ──────────────────
   useEffect(() => {
-    const enabled = Boolean(profile?.settings?.darkTheme);
-    document.documentElement.classList.toggle('theme-dark', enabled);
+    const selectedTheme = profile?.settings?.theme || 'Sakura';
+    
+    // Remove any existing theme classes
+    const themes = ['theme-Sakura', 'theme-Midnight', 'theme-Ocean', 'theme-Forest', 'theme-dark'];
+    document.documentElement.classList.remove(...themes);
+    
+    // Add the current theme class
+    document.documentElement.classList.add(`theme-${selectedTheme}`);
+    
+    // Backward compatibility for components checking theme-dark explicitly
+    if (selectedTheme === 'Midnight' || profile?.settings?.darkTheme) {
+      document.documentElement.classList.add('theme-dark');
+    }
+
     return () => {
-      document.documentElement.classList.remove('theme-dark');
+      document.documentElement.classList.remove(...themes);
     };
-  }, [profile?.settings?.darkTheme]);
+  }, [profile?.settings?.theme, profile?.settings?.darkTheme]);
 
   // ── Auth actions ──────────────────────────────────────────────────────────
   const loginWithGoogle = async () => {

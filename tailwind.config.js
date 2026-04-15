@@ -8,16 +8,16 @@ export default {
     extend: {
       colors: {
         kawaii: {
-          pink: '#FFD1DC',
-          sakura: '#FFB7C5',
-          lilac: '#E0BBE4',
-          mint: '#957DAD',
-          blue: '#D291BC',
-          cream: '#FEC8D8',
-          bg: '#FFF5F8',
-          earth: '#4A3525',
-          earthLight: '#7A593E',
-          yellow: '#FFF3CD'
+          pink: 'var(--kawaii-pink)',
+          sakura: 'var(--kawaii-sakura)',
+          lilac: 'var(--kawaii-lilac)',
+          mint: 'var(--kawaii-mint)',
+          blue: 'var(--kawaii-blue)',
+          cream: 'var(--kawaii-cream)',
+          bg: 'var(--kawaii-bg)',
+          earth: 'var(--kawaii-earth)',
+          earthLight: 'var(--kawaii-earthLight)',
+          yellow: 'var(--kawaii-yellow)'
         }
       },
       fontFamily: {

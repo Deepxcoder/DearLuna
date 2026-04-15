@@ -213,12 +213,12 @@ const Dashboard = () => {
               })}
 
               <svg className="absolute inset-0 w-full h-full transform -rotate-90" viewBox="0 0 240 240">
-                <circle cx="120" cy="120" r={ringRadius} stroke="#F6EEA7" strokeWidth="11" fill="none" />
+                <circle cx="120" cy="120" r={ringRadius} stroke="var(--kawaii-yellow)" strokeWidth="11" fill="none" opacity="0.4" />
                 <circle
                   cx="120"
                   cy="120"
                   r={ringRadius}
-                  stroke="#7C4A59"
+                  stroke="var(--kawaii-pink)"
                   strokeWidth="11"
                   fill="none"
                   strokeDasharray={ringCircumference}
@@ -228,9 +228,9 @@ const Dashboard = () => {
               </svg>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="ui-text-xl text-[#7C4A59]">🌙</span>
-                <span className="ui-text-2xl font-extrabold text-[#2F231A] leading-none mt-1">Day {cycleDay}</span>
-                <span className="ui-text-xs font-bold text-[#7A6A5E] uppercase tracking-widest mt-1">Of {cycleLength}</span>
+                <span className="ui-text-xl text-kawaii-earth">🌙</span>
+                <span className="ui-text-2xl font-extrabold text-kawaii-earth leading-none mt-1">Day {cycleDay}</span>
+                <span className="ui-text-xs font-bold text-kawaii-earthLight uppercase tracking-widest mt-1">Of {cycleLength}</span>
               </div>
 
               <div className="absolute left-[5%] top-[53%] -translate-y-1/2 text-xl">🐱</div>
