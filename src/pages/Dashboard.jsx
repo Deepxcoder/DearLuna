@@ -4,13 +4,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Sticker from '../components/UI/Sticker';
 import { Drop, Barbell, X, CaretLeft, CaretRight, Check } from '@phosphor-icons/react';
 import { useUserProfile } from '../context/UserProfileContext';
+import LunaPet from '../components/UI/LunaPet';
 import { getCalendarGrid, getDayPhase, formatMonthHeader } from '../utils/dateUtils';
 import { useCycleLogic } from '../hooks/useCycleLogic';
 import { getShuffledAffirmations, personalise } from '../utils/affirmations';
 import { format } from 'date-fns';
 
 const Dashboard = () => {
-  const { profile, dailyLog, updateDailyLog, loading, currentDate, setCurrentDate, needsPeriodSetup, setPeriodStartDate } = useUserProfile();
+  const { 
+    profile, dailyLog, updateDailyLog, loading, currentDate, setCurrentDate, 
+    needsPeriodSetup, setPeriodStartDate, petAction, triggerPetAction, isInitializing, isGuest 
+  } = useUserProfile();
   const [activeModal, setActiveModal] = useState(null);
   const [periodInput, setPeriodInput] = useState('');
   const navigate = useNavigate();
@@ -44,11 +48,17 @@ const Dashboard = () => {
   );
   
   // Guard for loading state
-  if (loading) {
+  if (loading || isInitializing) {
     return (
       <div className="flex flex-col h-screen items-center justify-center bg-kawaii-bg">
-        <div className="text-kawaii-earth font-black text-2xl animate-pulse flex items-center gap-3">
-          <span className="text-4xl">🌙</span> Loading your glow...
+        <motion.div 
+          animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        >
+          <LunaPet state="idle" size="medium" />
+        </motion.div>
+        <div className="text-kawaii-earth font-black text-2xl mt-8 flex items-center gap-3">
+          🌙 Loading your glow...
         </div>
         <p className="mt-4 text-kawaii-earthLight text-xs font-bold uppercase tracking-widest">Checking your stars</p>
       </div>
@@ -56,20 +66,28 @@ const Dashboard = () => {
   }
 
   // Handle Guest / Missing Profile
-  if (!profile) {
+  if (!profile && !isGuest) {
     return (
       <div className="flex flex-col h-screen items-center justify-center p-8 text-center bg-kawaii-bg">
-        <Sticker emoji="✨" className="mb-4" rotate={0} style={{ fontSize: '4rem' }} />
+        <LunaPet state="happy" size="large" className="mb-8" />
         <h2 className="text-4xl font-black text-kawaii-earth mb-4">Hello, new star!</h2>
         <p className="text-lg text-kawaii-earthLight max-w-md mb-8">
-          We couldn't find your profile. If you're new here, please head to **Settings** to set up your cycle!
+          We're preparing your universe. If this screen persists, please head to **Settings** to sync your profile!
         </p>
-        <button 
-           onClick={() => window.location.href = '/settings'}
-           className="px-8 py-4 bg-kawaii-pink text-kawaii-earth rounded-full font-bold shadow-soft hover:scale-105 transition-transform"
-        >
-          Setup My Profile
-        </button>
+        <div className="flex gap-4">
+          <button 
+             onClick={() => window.location.reload()}
+             className="px-8 py-4 bg-white border-2 border-kawaii-pink text-kawaii-earth rounded-full font-bold shadow-soft hover:scale-105 transition-transform"
+          >
+            Refresh Data
+          </button>
+          <button 
+             onClick={() => navigate('/settings')}
+             className="px-8 py-4 bg-kawaii-pink text-kawaii-earth rounded-full font-bold shadow-soft hover:scale-105 transition-transform"
+          >
+            Setup Profile
+          </button>
+        </div>
       </div>
     );
   }
@@ -116,6 +134,7 @@ const Dashboard = () => {
     updateDailyLog({
       rituals: { ...rituals, water: Math.min((rituals.water || 0) + amount, waterTarget) }
     });
+    triggerPetAction('drinking');
   };
 
   const toggleRitual = (name) => {
@@ -155,30 +174,32 @@ const Dashboard = () => {
           <h1 className="ui-text-3xl font-extrabold text-kawaii-earth tracking-tight">Your Daily Glow</h1>
         </div>
         
-        {/* Rotating Affirmation Bubble */}
-        <div className="relative bg-white rounded-3xl rounded-tl-none px-6 py-4 shadow-sm max-w-sm border-2 border-white/40 min-h-[70px] flex items-center">
-          <Sticker emoji="🐾" className="-top-6 -left-6" rotate={-15} style={{ fontSize: '1.5rem', padding: '0.3rem' }} />
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={affirmIndex}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: affirmVisible ? 1 : 0, y: affirmVisible ? 0 : -6 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.45, ease: 'easeInOut' }}
-              className="text-sm italic font-medium text-kawaii-earth leading-relaxed"
-            >
-              "{currentAffirmation}"
-            </motion.p>
-          </AnimatePresence>
-          {/* Progress dots */}
-          <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
-            {[0,1,2].map(i => (
-              <div
-                key={i}
-                className="w-1 h-1 rounded-full bg-kawaii-pink/40"
-                style={{ opacity: i === affirmIndex % 3 ? 1 : 0.3 }}
-              />
-            ))}
+        {/* Rotating Affirmation Bubble with Bear Sticker */}
+        <div className="relative flex items-center gap-2">
+          <div className="relative bg-white rounded-3xl rounded-tl-none px-6 py-4 shadow-sm max-w-sm border-2 border-white/40 min-h-[85px] flex items-center">
+            <Sticker emoji="🐻" className="-top-6 -left-6" rotate={-15} style={{ fontSize: '1.5rem', padding: '0.3rem' }} />
+            <AnimatePresence mode="wait">
+              <motion.p
+                key={affirmIndex}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: affirmVisible ? 1 : 0, y: affirmVisible ? 0 : -6 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.45, ease: 'easeInOut' }}
+                className="text-sm italic font-medium text-kawaii-earth leading-relaxed"
+              >
+                "{currentAffirmation}"
+              </motion.p>
+            </AnimatePresence>
+            {/* Progress dots */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex gap-1">
+              {[0,1,2].map(i => (
+                <div
+                  key={i}
+                  className="w-1 h-1 rounded-full bg-kawaii-pink/40"
+                  style={{ opacity: i === affirmIndex % 3 ? 1 : 0.3 }}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </header>
@@ -188,7 +209,7 @@ const Dashboard = () => {
         
         {/* CYCLE TRACKER CARD */}
         <div className="flex-[3] bg-white ui-rounded ui-p shadow-sm relative flex flex-col lg:flex-row border-2 border-white/50 gap-6">
-          <Sticker emoji="🐾" className="-top-4 -left-4" rotate={15} style={{ fontSize: '1.5rem' }} />
+          <Sticker emoji="🐻" className="-top-4 -left-4" rotate={15} style={{ fontSize: '1.5rem' }} />
 
           <div className="flex-1 flex flex-col justify-center relative">
             <h3 className="ui-text-xl font-bold text-kawaii-earth flex items-center gap-3">
@@ -227,16 +248,9 @@ const Dashboard = () => {
                 />
               </svg>
 
-              <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="ui-text-xl text-kawaii-earth">🌙</span>
-                <span className="ui-text-2xl font-extrabold text-kawaii-earth leading-none mt-1">Day {cycleDay}</span>
-                <span className="ui-text-xs font-bold text-kawaii-earthLight uppercase tracking-widest mt-1">Of {cycleLength}</span>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none scale-110">
+                <LunaPet state={petAction} size="medium" />
               </div>
-
-              <div className="absolute left-[5%] top-[53%] -translate-y-1/2 text-xl">🐱</div>
-              <div className="absolute right-[5%] top-[53%] -translate-y-1/2 text-xl">🐱</div>
-              <div className="absolute bottom-[2%] left-[36%] text-lg">🐾</div>
-              <div className="absolute bottom-[2%] right-[36%] text-lg">🐾</div>
             </div>
           </div>
 
@@ -397,7 +411,10 @@ const Dashboard = () => {
            <div className="bg-yellow-100/60 backdrop-blur-sm rounded-[32px] p-4 border-2 border-white/50 shadow-sm relative overflow-hidden flex-1 min-h-[100px]">
               <textarea 
                 value={activeLog.reflection || ''}
-                onChange={(e) => updateDailyLog({ reflection: e.target.value })}
+                onChange={(e) => {
+                  updateDailyLog({ reflection: e.target.value });
+                  triggerPetAction('writing');
+                }}
                 className="w-full h-full bg-transparent border-none outline-none text-kawaii-earth font-medium placeholder-kawaii-earthLight/60 resize-none text-sm leading-relaxed"
                 placeholder="How are you feeling today?"
               />

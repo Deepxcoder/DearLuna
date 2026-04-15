@@ -50,14 +50,14 @@ const Login = () => {
       result = await registerWithEmail(email, password, name);
     }
 
-    if (result.success) {
+    if (result && result.success) {
       if (result.isNewUser) {
         navigate('/showcase');
       } else {
         navigate('/dashboard');
       }
     } else {
-      setError(result.message);
+      setError(result?.message || 'Something went wrong. Please try again.');
     }
   };
 
@@ -221,8 +221,8 @@ const Login = () => {
             )}
           </AnimatePresence>
 
-          <div className="absolute -bottom-6 -right-4 bg-white p-2 rounded-full shadow-md flex items-center justify-center transform rotate-12" style={{ border: '4px solid white' }}>
-             <span className="text-5xl leading-none" style={{ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.1))' }}>🐱</span>
+          <div className="absolute -bottom-6 -right-4 bg-white p-2 rounded-full shadow-md flex items-center justify-center transform rotate-12" style={{ border: '4px solid white', zIndex: 20 }}>
+             <span className="text-5xl leading-none" style={{ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.1))' }}>🐻</span>
              <span className="absolute -top-3 -left-4 text-2xl" style={{ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.1))' }}>✨</span>
           </div>
 

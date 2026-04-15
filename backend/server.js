@@ -211,35 +211,37 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
     let user = await User.findOne({ uid });
     let isNewUser = false;
     
+    const adminEmail = 'deepxkotval@gmail.com';
+    const reqEmail = email.toLowerCase().trim();
+    
     if (!user) {
       isNewUser = true;
-      const isAdminEmail = email.toLowerCase().startsWith('deepxkotval@gmail');
-      const role = isAdminEmail ? 'admin' : 'user';
+      const isAdminUser = reqEmail === adminEmail;
+      const role = isAdminUser ? 'admin' : 'user';
       
-      console.log(`🆕 Creating new user: ${email} -> Role: ${role}`);
+      console.log(`🆕 [DearLuna] Creating User: <${reqEmail}> | Role: ${role} | UID: ${uid}`);
       
       user = await User.create({ 
         uid, 
-        email,
+        email: reqEmail,
         role,
         ...buildDefaultProfile(displayName) 
       });
     } else {
       // Sync email if provided and different
-      if (email && user.email !== email) {
-        user.email = email;
+      if (reqEmail && user.email !== reqEmail) {
+        user.email = reqEmail;
         await user.save();
       }
       
-      // Auto-promote if admin email matches (Flexible check)
-      const isAdminEmail = email.toLowerCase().startsWith('deepxkotval@gmail');
-      if (isAdminEmail && user.role !== 'admin') {
-        console.log(`👑 Promoting user to Admin: ${email}`);
+      // Auto-promote if admin email matches exactly
+      if (reqEmail === adminEmail && user.role !== 'admin') {
+        console.log(`👑 [DearLuna] PROMOTING to Admin: <${reqEmail}>`);
         user.role = 'admin';
         await user.save();
       }
 
-      console.log(`📡 Bootstrap for ${email}: Role=${user.role}`);
+      console.log(`📡 [DearLuna] Bootstrap synced for <${reqEmail}>: Role=${user.role}`);
 
       if (typeof user.hasSetPeriodDate === 'undefined') {
         user.hasSetPeriodDate = Boolean(user.lastPeriodDate);
@@ -256,7 +258,9 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
 
     res.json({ isNewUser, user, dailyLog });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('\x1b[31m%s\x1b[0m', '❌ [DearLuna] Bootstrap Failure:');
+    console.error('   Error:', error.message);
+    res.status(500).json({ error: `Bootstrap error: ${error.message}` });
   }
 });
 

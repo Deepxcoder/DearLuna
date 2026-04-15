@@ -121,7 +121,7 @@ const Cycle = () => {
       <div className="grid grid-cols-1 xl:grid-cols-[1.08fr_0.92fr] gap-6">
         <section className="bg-white/70 rounded-[40px] border border-white/70 shadow-sm p-5 lg:p-6 relative">
           <h2 className="ui-text-2xl font-black text-kawaii-earth mb-4">Luna Dial</h2>
-          <Sticker emoji="🐾" className="-top-5 right-6" rotate={8} style={{ fontSize: '2rem' }} />
+          <Sticker emoji="🐻" className="-top-5 right-6" rotate={8} style={{ fontSize: '2rem' }} />
 
           <div className="relative ui-cycle-dial mx-auto mt-4 flex items-center justify-center">
             {moonMarkers.map((moon, idx) => {
@@ -157,10 +157,10 @@ const Cycle = () => {
               <span className="ui-text-lg font-bold text-[#403329] mt-1">- {cycleData.currentPhase} Phase</span>
             </div>
 
-            <div className="absolute left-[7%] top-[52%] text-2xl">🐱</div>
-            <div className="absolute right-[7%] top-[52%] text-2xl">🐱</div>
-            <div className="absolute bottom-[4%] left-[38%] text-2xl">🐾</div>
-            <div className="absolute bottom-[4%] right-[38%] text-2xl">🐾</div>
+            <div className="absolute left-[7%] top-[52%] text-2xl">🐻</div>
+            <div className="absolute right-[7%] top-[52%] text-2xl">🐻</div>
+            <div className="absolute bottom-[4%] left-[38%] text-2xl">🐻</div>
+            <div className="absolute bottom-[4%] right-[38%] text-2xl">🐻</div>
           </div>
         </section>
 

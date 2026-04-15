@@ -8,6 +8,7 @@ import {
   eachDayOfInterval, startOfMonth, endOfMonth, isToday as dfIsToday
 } from 'date-fns';
 import { useUserProfile } from '../context/UserProfileContext';
+import LunaPet from '../components/UI/LunaPet';
 
 // ─── Default habits (used when none are customised) ──────────────────────────
 const DEFAULT_HABITS = [
@@ -438,7 +439,10 @@ const YearView = ({ currentDate, habitList }) => {
 
 // ─── Main Habits Page ─────────────────────────────────────────────────────────
 const Habits = () => {
-  const { profile, updateProfile, dailyLog, updateDailyLog, currentDate, setCurrentDate, loading } = useUserProfile();
+  const { 
+    profile, updateProfile, dailyLog, updateDailyLog, currentDate, setCurrentDate, loading,
+    petAction, triggerPetAction
+  } = useUserProfile();
   const [view, setView] = useState('Day');
   const [showHabitEditor, setShowHabitEditor] = useState(false);
   const [showWaterModal, setShowWaterModal] = useState(false);
@@ -478,6 +482,7 @@ const Habits = () => {
         happiness: Math.min(100, Math.max(0, petHappiness + happinessGain)),
       }
     });
+    triggerPetAction('happy');
   };
 
   const toggleHabit = (id) => {
@@ -485,6 +490,11 @@ const Habits = () => {
     updateDailyLog({ habits: { ...habits, [id]: nextVal } });
     if (nextVal) {
       awardPetProgress(10, 2);
+      
+      // Trigger animations based on habit
+      if (id === 'skincare') triggerPetAction('sparkle');
+      if (id === 'journaling') triggerPetAction('writing');
+      
       // Trigger automated email notification
       const habit = habitList.find(h => h.id === id);
       if (habit) {
@@ -505,6 +515,7 @@ const Habits = () => {
 
   const handleAddWater = (amount) => {
     updateDailyLog({ rituals: { ...rituals, water: Math.min(waterTarget, (rituals.water || 0) + amount) } });
+    triggerPetAction('drinking');
   };
 
   const handleSetWater = (amount) => {
@@ -682,9 +693,9 @@ const Habits = () => {
                 <h3 className="ui-text-base font-black text-kawaii-earth uppercase tracking-widest">Pet Zen</h3>
                 <span className="text-[10px] font-black bg-kawaii-pink text-white px-3 py-1 rounded-full uppercase">Lvl {petLevel}</span>
               </div>
-              <div className="relative w-full flex-1 flex items-center justify-center">
+              <div className="relative w-full flex-1 flex items-center justify-center min-h-[180px]">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-kawaii-pink/5 rounded-full filter blur-3xl opacity-30" />
-                <Sticker emoji="🐻" rotate={0} className="relative z-10" style={{ fontSize: 'var(--ui-cycle-dial, 6rem)', border: 'none', boxShadow: 'none', background: 'transparent' }} />
+                <LunaPet state={petAction} size="large" className="relative z-10" />
               </div>
               <div className="w-full mt-6">
                 <div className="flex justify-center mb-3">

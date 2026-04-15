@@ -6,7 +6,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 import { format } from 'date-fns';
 
 const Journal = () => {
-    const { user, loading } = useUserProfile();
+    const { user, loading, triggerPetAction } = useUserProfile();
     const [entry, setEntry] = useState('');
     const [entries, setEntries] = useState([]);
     const [saving, setSaving] = useState(false);
@@ -42,6 +42,7 @@ const Journal = () => {
           setEntry('');
           setStatus('Saved! ✨');
           fetchEntries();
+          triggerPetAction('writing');
           setTimeout(() => setStatus(''), 3000);
         }
       } catch (e) {

@@ -50,6 +50,8 @@ export const UserProfileProvider = ({ children }) => {
   const [isGuest, setIsGuest] = useState(false);
   const [currentDate, setCurrentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [needsPeriodSetup, setNeedsPeriodSetup] = useState(false);
+  const [petAction, setPetAction] = useState('idle');
+  const petActionTimer = useRef(null);
 
   // Debounce timer refs so rapid UI updates (reflection typing, water taps) don't spam the DB
   const logSaveTimer = useRef(null);
@@ -62,22 +64,29 @@ export const UserProfileProvider = ({ children }) => {
 
     try {
       const res = await fetch(url, { ...options, signal: controller.signal });
-      const data = await res.json();
       clearTimeout(timeout);
 
+      // If response is not JSON (e.g., 404 HTML), res.json() will throw "Unexpected token <"
+      // We handle that by checking Content-Type or simply catching the error below
+      const data = await res.json();
+
       if (!res.ok) {
-        console.warn(`Fetch error for ${url}:`, data);
-        return null;
+        console.warn(`[DearLuna] API Error for ${url}:`, data);
+        return { error: data.error || data.message || `Server responded with ${res.status}` };
       }
       return data;
     } catch (err) {
       clearTimeout(timeout);
+      let msg = 'Unknown connection error';
       if (err.name === 'AbortError') {
-        console.error(`Fetch TIMEOUT for ${url}`);
+        msg = 'Connection timed out. Is the backend running?';
+      } else if (err instanceof SyntaxError) {
+        msg = 'Received non-JSON response from server (possible 404 or crash).';
       } else {
-        console.error(`Network error for ${url}:`, err);
+        msg = err.message;
       }
-      return null;
+      console.error(`[DearLuna] Network error for ${url}:`, err);
+      return { error: msg };
     }
   };
 
@@ -145,7 +154,9 @@ export const UserProfileProvider = ({ children }) => {
       }),
     });
 
-    if (!data) return false;
+    if (!data || data.error) {
+      return { success: false, message: data?.error || 'Failed to initialize session. Check backend connection.' };
+    }
     
     // DEBUG: Inform the user and us about the loaded role
     if (data.user) {
@@ -431,6 +442,17 @@ export const UserProfileProvider = ({ children }) => {
     if (saved && date === currentDate) setDailyLog(saved);
     return saved;
   };
+  
+  // ── Pet Action Trigger ──────────────────────────────────────────────────
+  const triggerPetAction = useCallback((action, duration = 2500) => {
+    clearTimeout(petActionTimer.current);
+    setPetAction(action);
+    if (action !== 'idle') {
+      petActionTimer.current = setTimeout(() => {
+        setPetAction('idle');
+      }, duration);
+    }
+  }, []);
 
   const sendTestNotification = async (recipientEmail = '') => {
     if (isGuest || !user?.uid) return { success: false, message: 'Must be logged in to send notifications' };
@@ -492,7 +514,9 @@ export const UserProfileProvider = ({ children }) => {
       triggerHabitNotification,
       deleteAccount,
       loginWithEmail,
-      registerWithEmail
+      registerWithEmail,
+      petAction,
+      triggerPetAction
     }}>
       {children}
     </UserProfileContext.Provider>
