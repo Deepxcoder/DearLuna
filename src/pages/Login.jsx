@@ -7,7 +7,7 @@ import { useUserProfile } from '../context/UserProfileContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { loginWithGoogle, loginAsGuest, loginWithEmail, registerWithEmail, loading } = useUserProfile();
+  const { user, profile, loginWithGoogle, loginAsGuest, loginWithEmail, registerWithEmail, loading } = useUserProfile();
   
   const [mode, setMode] = useState('social'); // 'social', 'login', 'register'
   const [email, setEmail] = useState('');
@@ -19,7 +19,9 @@ const Login = () => {
     e.preventDefault();
     const result = await loginWithGoogle();
     if (result && result.success) {
-      if (result.isNewUser) {
+      if (result.user?.role === 'admin') {
+        navigate('/admin');
+      } else if (result.isNewUser) {
         navigate('/showcase');
       } else {
         navigate('/dashboard');
@@ -34,7 +36,7 @@ const Login = () => {
       if (result.isNewUser) {
         navigate('/showcase');
       } else {
-        navigate('/dashboard');
+        navigate('/dashboard'); // Guests are never admins
       }
     }
   };
@@ -51,7 +53,9 @@ const Login = () => {
     }
 
     if (result && result.success) {
-      if (result.isNewUser) {
+      if (result.user?.role === 'admin') {
+        navigate('/admin');
+      } else if (result.isNewUser) {
         navigate('/showcase');
       } else {
         navigate('/dashboard');
@@ -108,6 +112,19 @@ const Login = () => {
                 exit={{ x: 20, opacity: 0 }}
                 className="w-full flex flex-col gap-4 items-center"
               >
+                {/* If already logged in, show a direct entry button */}
+                {user && !loading && (
+                  <button 
+                    type="button"
+                    onClick={() => navigate(profile?.role === 'admin' ? '/admin' : '/dashboard')}
+                    className="w-[90%] bg-gradient-to-r from-kawaii-pink to-kawaii-lilac hover:scale-[1.05] active:scale-[0.95] transition-all rounded-2xl py-5 px-6 flex items-center justify-center gap-3 font-body font-black text-white shadow-soft mb-4 border-2 border-white"
+                  >
+                    <span className="text-2xl">✨</span>
+                    Continue to Dashboard
+                    <span className="text-2xl">✨</span>
+                  </button>
+                )}
+
                 <button 
                   type="button"
                   onClick={handleGoogleLogin}
@@ -208,7 +225,7 @@ const Login = () => {
                   {loading ? 'Processing...' : (mode === 'login' ? 'Login' : 'Create Account')}
                 </button>
 
-                <div className="text-center mt-2">
+                <div className="text-center mt-2 flex flex-col gap-2">
                   <button 
                     type="button"
                     onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
@@ -216,6 +233,12 @@ const Login = () => {
                   >
                     {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
                   </button>
+
+                  {mode === 'login' && (
+                    <p className="text-[10px] text-kawaii-earthLight font-bold uppercase tracking-tighter opacity-70">
+                      Dev? Use <span className="text-kawaii-lilac">admin@dearluna.app</span> / <span className="text-kawaii-lilac">admin123</span>
+                    </p>
+                  )}
                 </div>
               </motion.form>
             )}

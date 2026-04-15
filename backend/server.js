@@ -216,7 +216,7 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
     
     if (!user) {
       isNewUser = true;
-      const isAdminUser = reqEmail === adminEmail;
+      const isAdminUser = reqEmail === adminEmail || uid === 'admin_dev_123';
       const role = isAdminUser ? 'admin' : 'user';
       
       console.log(`🆕 [DearLuna] Creating User: <${reqEmail}> | Role: ${role} | UID: ${uid}`);
@@ -225,7 +225,8 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
         uid, 
         email: reqEmail,
         role,
-        ...buildDefaultProfile(displayName) 
+        ...buildDefaultProfile(displayName),
+        hasSetPeriodDate: isAdminUser // Admins bypass setup
       });
     } else {
       // Sync email if provided and different
@@ -234,10 +235,12 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
         await user.save();
       }
       
-      // Auto-promote if admin email matches exactly
-      if (reqEmail === adminEmail && user.role !== 'admin') {
-        console.log(`👑 [DearLuna] PROMOTING to Admin: <${reqEmail}>`);
+      // Auto-promote if admin email matches exactly or if it's the mock dev UID
+      const isAdminUser = reqEmail === adminEmail || uid === 'admin_dev_123';
+      if (isAdminUser && user.role !== 'admin') {
+        console.log(`👑 [DearLuna] PROMOTING to Admin: <${reqEmail}> (UID: ${uid})`);
         user.role = 'admin';
+        user.hasSetPeriodDate = true; // Admins don't need cycle setup
         await user.save();
       }
 
@@ -299,12 +302,52 @@ app.get('/api/users/:uid', async (req, res) => {
 // --- ADMIN ROUTES ---
 
 const isAdmin = async (req, res, next) => {
-  const { adminuid } = req.headers; // Simplification for local demo
+  const { adminuid } = req.headers; 
   if (!adminuid) return res.status(401).json({ message: 'Unauthorized' });
+  
+  // Developer Bypass for testing
+  if (adminuid === 'admin_dev_123') return next();
+  
   const user = await User.findOne({ uid: adminuid });
   if (user && user.role === 'admin') return next();
   res.status(403).json({ message: 'Admin access required' });
 };
+
+app.get('/api/admin/dashboard-stats', isAdmin, async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const activeTodayCount = await User.countDocuments({ updatedAt: { $gte: today } });
+    const newSignupsToday = await User.countDocuments({ createdAt: { $gte: today } });
+
+    // Growth Data (last 7 days)
+    const growthData = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const nextD = new Date(d);
+      nextD.setDate(nextD.getDate() + 1);
+
+      const count = await User.countDocuments({ createdAt: { $gte: d, $lt: nextD } });
+      growthData.push({
+        date: d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        count
+      });
+    }
+
+    res.json({
+      totalUsers,
+      activeToday: activeTodayCount,
+      newSignups: newSignupsToday,
+      growthData
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.get('/api/admin/users', isAdmin, async (req, res) => {
   try {

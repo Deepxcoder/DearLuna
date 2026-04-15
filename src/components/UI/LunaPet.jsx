@@ -35,6 +35,16 @@ const LunaPet = ({ state = 'idle', className = '', size = 'medium' }) => {
       scale: [1, 1.1, 1],
       rotate: [0, 360],
       transition: { duration: 1.2, ease: "circInOut" }
+    },
+    zen: {
+      scale: [1, 1.03, 1],
+      y: [0, -5, 0],
+      transition: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+    },
+    sleeping: {
+      scale: [1, 0.97, 1],
+      opacity: 0.9,
+      transition: { duration: 3, repeat: Infinity, ease: "easeInOut" }
     }
   };
 
@@ -72,36 +82,36 @@ const LunaPet = ({ state = 'idle', className = '', size = 'medium' }) => {
         className="relative w-full h-full flex items-center justify-center p-4 drop-shadow-2xl"
       >
         {/* The Bear Body */}
-        <div className="relative w-full h-full bg-gradient-to-b from-[#FFF5F8] to-[#F3E5F5] rounded-[45%] border-[3px] border-white/60 shadow-inner overflow-hidden">
-          {/* Belly Glassmorphism */}
-          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-white/40 blur-sm rounded-[50%]" />
+        <div className="relative w-full h-full bg-gradient-to-b from-[#8B5E3C] to-[#6D4229] rounded-[48%] border-[4px] border-[#5D3A21]/30 shadow-inner overflow-hidden">
+          {/* Belly - Cream/White highlight */}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-[70%] h-[55%] bg-[#FFF8DC] blur-[1px] rounded-[50%] border border-white/20" />
           
           {/* Face */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 pt-2">
             {/* Eyes */}
-            <div className="flex gap-8 mb-2">
-              <motion.div variants={eyeVariants} animate={state} className="w-3 h-3 bg-kawaii-earth rounded-full shadow-sm" />
-              <motion.div variants={eyeVariants} animate={state} className="w-3 h-3 bg-kawaii-earth rounded-full shadow-sm" />
+            <div className="flex gap-10 mb-2">
+              <motion.div variants={eyeVariants} animate={state} className="w-3.5 h-3.5 bg-[#2D1B0E] rounded-full shadow-sm" />
+              <motion.div variants={eyeVariants} animate={state} className="w-3.5 h-3.5 bg-[#2D1B0E] rounded-full shadow-sm" />
             </div>
             {/* Muzzle */}
-            <div className="relative w-10 h-8 bg-white/80 rounded-full flex flex-col items-center justify-center pt-1 border border-white/40">
-              <div className="w-4 h-2.5 bg-[#4A3525] rounded-full" />
-              <div className="w-4 h-1.5 border-b-[2px] border-[#4A3525] rounded-[50%] opacity-40 mt-0.5" />
+            <div className="relative w-12 h-10 bg-[#FFFDF0] rounded-full flex flex-col items-center justify-center pt-1 border border-[#E9C46A]/20 shadow-sm">
+              <div className="w-4.5 h-3 bg-[#4A3525] rounded-full mb-0.5" />
+              <div className="w-5 h-2 border-b-[2px] border-[#4A3525]/30 rounded-[50%]" />
             </div>
             {/* Blush */}
-            <div className="absolute w-full flex justify-between px-6 top-[55%]">
-              <div className="w-5 h-2 bg-kawaii-pink/30 rounded-full blur-[2px]" />
-              <div className="w-5 h-2 bg-kawaii-pink/30 rounded-full blur-[2px]" />
+            <div className="absolute w-full flex justify-between px-7 top-[52%]">
+              <div className="w-6 h-3 bg-[#FFB7B2]/40 rounded-full blur-[3px]" />
+              <div className="w-6 h-3 bg-[#FFB7B2]/40 rounded-full blur-[3px]" />
             </div>
           </div>
         </div>
 
         {/* Ears */}
-        <motion.div variants={earVariants} animate={state} className="absolute -top-2 left-4 w-12 h-12 bg-[#FFF5F8] border-[3px] border-white/60 rounded-full shadow-md -z-10 overflow-hidden">
-           <div className="absolute inset-2 bg-kawaii-pink/20 rounded-full" />
+        <motion.div variants={earVariants} animate={state} className="absolute -top-1 left-3 w-14 h-14 bg-[#8B5E3C] border-[4px] border-[#5D3A21]/20 rounded-full shadow-md -z-10 overflow-hidden">
+           <div className="absolute inset-3 bg-[#FFF8DC]/20 rounded-full" />
         </motion.div>
-        <motion.div variants={earVariants} animate={state} className="absolute -top-2 right-4 w-12 h-12 bg-[#FFF5F8] border-[3px] border-white/60 rounded-full shadow-md -z-10 overflow-hidden">
-           <div className="absolute inset-2 bg-kawaii-pink/20 rounded-full" />
+        <motion.div variants={earVariants} animate={state} className="absolute -top-1 right-3 w-14 h-14 bg-[#8B5E3C] border-[4px] border-[#5D3A21]/20 rounded-full shadow-md -z-10 overflow-hidden">
+           <div className="absolute inset-3 bg-[#FFF8DC]/20 rounded-full" />
         </motion.div>
 
         {/* Floating Props based on state */}
@@ -146,6 +156,31 @@ const LunaPet = ({ state = 'idle', className = '', size = 'medium' }) => {
               className="absolute -top-10 left-1/2 -translate-x-1/2 text-5xl"
             >
               💖
+            </motion.div>
+          )}
+          {state === 'zen' && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ 
+                opacity: [0.4, 0.8, 0.4], 
+                scale: [1, 1.5, 1],
+              }}
+              transition={{ duration: 4, repeat: Infinity }}
+              className="absolute inset-0 bg-white rounded-full blur-2xl -z-10"
+            />
+          )}
+          {state === 'sleeping' && (
+            <motion.div 
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ 
+                opacity: [0.4, 1, 0.4], 
+                y: [0, -20],
+                x: [0, 10]
+              }}
+              transition={{ duration: 3, repeat: Infinity }}
+              className="absolute -top-8 -right-4 text-3xl font-bold text-kawaii-lilac"
+            >
+              Zzz
             </motion.div>
           )}
         </AnimatePresence>

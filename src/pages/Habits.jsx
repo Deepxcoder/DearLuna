@@ -9,6 +9,7 @@ import {
 } from 'date-fns';
 import { useUserProfile } from '../context/UserProfileContext';
 import LunaPet from '../components/UI/LunaPet';
+import confetti from 'canvas-confetti';
 
 // ─── Default habits (used when none are customised) ──────────────────────────
 const DEFAULT_HABITS = [
@@ -441,7 +442,7 @@ const YearView = ({ currentDate, habitList }) => {
 const Habits = () => {
   const { 
     profile, updateProfile, dailyLog, updateDailyLog, currentDate, setCurrentDate, loading,
-    petAction, triggerPetAction
+    petAction, petMood, triggerPetAction
   } = useUserProfile();
   const [view, setView] = useState('Day');
   const [showHabitEditor, setShowHabitEditor] = useState(false);
@@ -490,6 +491,13 @@ const Habits = () => {
     updateDailyLog({ habits: { ...habits, [id]: nextVal } });
     if (nextVal) {
       awardPetProgress(10, 2);
+      
+      confetti({
+        particleCount: 100,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ['#FFD1DC', '#E0BBE4', '#FFF3CD']
+      });
       
       // Trigger animations based on habit
       if (id === 'skincare') triggerPetAction('sparkle');
@@ -695,7 +703,7 @@ const Habits = () => {
               </div>
               <div className="relative w-full flex-1 flex items-center justify-center min-h-[180px]">
                 <div className="absolute inset-0 bg-gradient-to-b from-transparent to-kawaii-pink/5 rounded-full filter blur-3xl opacity-30" />
-                <LunaPet state={petAction} size="large" className="relative z-10" />
+                <LunaPet state={petAction !== 'idle' ? petAction : petMood} size="large" className="relative z-10" />
               </div>
               <div className="w-full mt-6">
                 <div className="flex justify-center mb-3">

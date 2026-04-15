@@ -1,6 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { SquaresFour, Drop, CalendarBlank, Sparkle, ChartBar, GearSix, SignOut, ShieldCheck } from '@phosphor-icons/react';
+import { 
+  SquaresFour, Drop, CalendarBlank, Sparkle, ChartBar, GearSix, SignOut, ShieldCheck,
+  Wind, BookOpen, Heart, Scroll, ChartLineUp, Users, EnvelopeSimple
+} from '@phosphor-icons/react';
 import Sticker from '../UI/Sticker';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { getAvatarUrl } from '../../utils/kawaiiAvatars';
@@ -11,15 +14,23 @@ const Sidebar = () => {
   const [expanded, setExpanded] = useState(false);
   const sidebarRef = useRef(null);
 
-  const navItems = [
-    { name: 'Dashboard', path: '/dashboard', icon: SquaresFour },
-    { name: 'Cycle',     path: '/cycle',     icon: Drop },
-    { name: 'Calendar',  path: '/calendar',  icon: CalendarBlank },
-    { name: 'Habits',    path: '/habits',    icon: Sparkle },
-    { name: 'Analytics', path: '/analytics', icon: ChartBar },
-    ...(profile?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: ShieldCheck }] : []),
-    { name: 'Settings',  path: '/settings',  icon: GearSix },
-  ];
+  const navItems = profile?.role === 'admin' 
+    ? [
+        { name: 'Dashboard',       path: '/admin?view=dashboard', icon: ChartLineUp },
+        { name: 'User Management',  path: '/admin?view=users',     icon: Users },
+        { name: 'Settings',  path: '/settings',  icon: GearSix },
+      ]
+    : [
+        { name: 'Dashboard', path: '/dashboard', icon: SquaresFour },
+        { name: 'Cycle',     path: '/cycle',     icon: Drop },
+        { name: 'Calendar',  path: '/calendar',  icon: CalendarBlank },
+        { name: 'Habits',    path: '/habits',    icon: Sparkle },
+        { name: 'Analytics', path: '/analytics', icon: ChartBar },
+        { name: 'Zen Zone',  path: '/meditation', icon: Wind },
+        { name: 'Scrapbook', path: '/scrapbook', icon: BookOpen },
+        { name: 'Safe Space', path: '/safespace', icon: Heart },
+        { name: 'Settings',  path: '/settings',  icon: GearSix },
+      ];
 
   // Collapse when clicking outside the sidebar
   useEffect(() => {
@@ -101,13 +112,18 @@ const Sidebar = () => {
             key={item.name}
             to={item.path}
             title={!expanded ? item.name : undefined}
-            className={({ isActive }) =>
-              `flex items-center gap-3 rounded-full font-bold transition-all duration-300 ${
-                isActive
+            className={({ isActive }) => {
+              // For admin views with query params, we need to check the full path (including search)
+              const isItemActive = profile?.role === 'admin' 
+                ? (window.location.pathname + window.location.search) === item.path
+                : isActive;
+
+              return `flex items-center gap-3 rounded-full font-bold transition-all duration-300 ${
+                isItemActive
                   ? 'bg-kawaii-pink text-kawaii-earth shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] border border-white/50'
                   : 'text-kawaii-earthLight hover:bg-kawaii-bg'
-              }`
-            }
+              }`;
+            }}
             style={{
               padding: expanded ? '0.75rem 1.25rem' : '0.75rem',
               justifyContent: expanded ? 'flex-start' : 'center',
@@ -121,8 +137,18 @@ const Sidebar = () => {
               <>
                 <item.icon
                   size={20}
-                  weight={isActive ? 'fill' : 'regular'}
-                  className={`shrink-0 ${isActive ? 'text-kawaii-earth' : 'text-kawaii-earthLight'}`}
+                  weight={
+                    (profile?.role === 'admin' 
+                      ? (window.location.pathname + window.location.search) === item.path
+                      : isActive
+                    ) ? 'fill' : 'regular'
+                  }
+                  className={`shrink-0 ${
+                    (profile?.role === 'admin' 
+                      ? (window.location.pathname + window.location.search) === item.path
+                      : isActive
+                    ) ? 'text-kawaii-earth' : 'text-kawaii-earthLight'
+                  }`}
                 />
                 <span
                   style={{

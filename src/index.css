@@ -261,4 +261,33 @@ html.theme-dark body::before, .theme-Midnight body::before {
     width:  var(--ui-icon-size, 20px);
     height: var(--ui-icon-size, 20px);
   }
+
+  /* PREMIUM INTERACTIVE UTILITIES */
+  .haptic-press {
+    @apply active:scale-95 transition-transform duration-100 ease-out;
+  }
+
+  .haptic-float {
+    @apply transition-all duration-300 hover:-translate-y-1 hover:shadow-lg active:scale-98;
+  }
+
+  .glow-premium {
+    box-shadow: 0 0 20px rgba(255, 158, 181, 0.2), 0 0 40px rgba(179, 157, 219, 0.1);
+  }
+
+  .shimmer-premium {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
 }

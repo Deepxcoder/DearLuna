@@ -51,6 +51,7 @@ export const UserProfileProvider = ({ children }) => {
   const [currentDate, setCurrentDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [needsPeriodSetup, setNeedsPeriodSetup] = useState(false);
   const [petAction, setPetAction] = useState('idle');
+  const [petMood, setPetMood] = useState('idle');
   const petActionTimer = useRef(null);
 
   // Debounce timer refs so rapid UI updates (reflection typing, water taps) don't spam the DB
@@ -144,7 +145,10 @@ export const UserProfileProvider = ({ children }) => {
 
   // ── Bootstrap user + day log in one call (new or existing user) ─────────
   const bootstrapUserData = async (firebaseUser, date) => {
-    const data = await safeFetch(`${API_URL}/users/${firebaseUser.uid}/bootstrap`, {
+    const url = `${API_URL}/users/${firebaseUser.uid}/bootstrap`;
+    console.log(`[DearLuna] Bootstrapping: UID=${firebaseUser.uid} | URL=${url}`);
+
+    const data = await safeFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -155,6 +159,7 @@ export const UserProfileProvider = ({ children }) => {
     });
 
     if (!data || data.error) {
+      console.error(`[DearLuna] Bootstrap ERROR for ${url}:`, data?.error);
       return { success: false, message: data?.error || 'Failed to initialize session. Check backend connection.' };
     }
     
@@ -166,7 +171,7 @@ export const UserProfileProvider = ({ children }) => {
     setProfile(data.user || null);
     setDailyLog(data.dailyLog || null);
     setNeedsPeriodSetup(Boolean(data.user) && !Boolean(data.user.hasSetPeriodDate));
-    return { success: true, isNewUser: data.isNewUser };
+    return { success: true, isNewUser: data.isNewUser, user: data.user };
   };
 
   // ── Fetch or create today's daily log ────────────────────────────────────
@@ -244,6 +249,27 @@ export const UserProfileProvider = ({ children }) => {
     };
   }, [profile?.settings?.theme, profile?.settings?.darkTheme]);
 
+  // ── Reactive Pet Mood ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!dailyLog || petAction !== 'idle') return;
+
+    const rituals = dailyLog.rituals || {};
+    const habits = dailyLog.habits || {};
+    const activeHabits = Object.values(habits).filter(v => v === true).length;
+    const waterScore = (rituals.water || 0) >= 1500 ? 1 : 0;
+    const totalActivity = activeHabits + waterScore + (rituals.exercise ? 1 : 0);
+
+    if (rituals.meditation) {
+      setPetMood('zen');
+    } else if (totalActivity >= 5) {
+      setPetMood('sparkle');
+    } else if (totalActivity >= 2) {
+      setPetMood('happy');
+    } else {
+      setPetMood('idle');
+    }
+  }, [dailyLog, petAction]);
+
   // ── Auth actions ──────────────────────────────────────────────────────────
   const loginWithGoogle = async () => {
     try {
@@ -261,6 +287,20 @@ export const UserProfileProvider = ({ children }) => {
   const loginWithEmail = async (email, password) => {
     try {
       setLoading(true);
+      
+      // Developer Admin Bypass
+      if (email === 'admin@dearluna.app' && password === 'admin123') {
+        const mockAdmin = { 
+          uid: 'admin_dev_123', 
+          email: 'admin@dearluna.app', 
+          displayName: 'Dev Admin',
+          isMock: true 
+        };
+        setUser(mockAdmin);
+        const result = await bootstrapUserData(mockAdmin, currentDate);
+        return result;
+      }
+
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const result = await bootstrapUserData(userCredential.user, currentDate);
       return result;
@@ -329,7 +369,7 @@ export const UserProfileProvider = ({ children }) => {
   const logout = async () => {
     try {
       setLoading(true);
-      if (!isGuest) {
+      if (!isGuest && !user?.isMock) {
         await signOut(auth);
       }
       setUser(null);
@@ -516,6 +556,7 @@ export const UserProfileProvider = ({ children }) => {
       loginWithEmail,
       registerWithEmail,
       petAction,
+      petMood,
       triggerPetAction
     }}>
       {children}

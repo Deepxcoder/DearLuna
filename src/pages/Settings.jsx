@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sticker from '../components/UI/Sticker';
-import { CaretLeft, CaretRight, Check, Palette } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Check, Palette, ShieldCheck, FileText, X } from '@phosphor-icons/react';
 import { AnimatePresence } from 'framer-motion';
 import { useUserProfile } from '../context/UserProfileContext';
+import ThemeSwitcher from '../components/Settings/ThemeSwitcher';
+import confetti from 'canvas-confetti';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -26,17 +28,27 @@ const Settings = () => {
   // Confetti particles state
   const [confetti, setConfetti] = useState([]);
 
-  const triggerConfetti = () => {
-    const emojis = ['✨', '💖', '⭐', '🌙', '🐱', '🐻'];
-    const particles = Array.from({ length: 20 }).map((_, i) => ({
-      id: i,
-      emoji: emojis[Math.floor(Math.random() * emojis.length)],
-      left: Math.random() * 100,
-      top: 50 + Math.random() * 50,
-      duration: 2 + Math.random() * 2
-    }));
-    setConfetti(particles);
-    setTimeout(() => setConfetti([]), 4000);
+  const legalContent = {
+    privacy: {
+      title: 'Privacy Policy',
+      icon: <ShieldCheck size={32} weight="fill" className="text-kawaii-pink" />,
+      updated: 'April 15, 2026',
+      sections: [
+        { title: 'Your Data, Your Sanctuary', text: 'At DearLuna, we believe your daily reflections and health data are sacred. We do not sell your personal information to third parties.' },
+        { title: 'Information We Collect', text: 'We collect minimal data: account details, cycle dates, and daily logs. All data is encrypted and stored securely.' },
+        { title: 'Luna\'s Protection', text: 'You can delete your account and all associated data at any time. Once deleted, your logs are purged from our active databases permanently.' }
+      ]
+    },
+    terms: {
+      title: 'Terms of Service',
+      icon: <FileText size={32} weight="fill" className="text-kawaii-lilac" />,
+      updated: 'April 15, 2026',
+      sections: [
+        { title: 'Usage Agreements', text: 'DearLuna is designed for personal wellness tracking. The app is not a substitute for professional medical advice.' },
+        { title: 'Premium Features', text: 'Some features require a subscription. These are billed through your chosen platform and can be managed in your profile settings.' },
+        { title: 'Community Standards', text: 'When using community features, you agree to maintain a kind, supportive, and respectful presence.' }
+      ]
+    }
   };
 
   useEffect(() => {
@@ -249,7 +261,6 @@ const Settings = () => {
                  <button className="w-full py-4 bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-2xl font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform">
                    Customize Stickers <Check size={16} className="inline ml-1" />
                  </button>
-
                  <button 
                   onClick={() => navigate('/showcase')}
                   className="w-full py-4 bg-white border-2 border-kawaii-mint text-kawaii-earth rounded-2xl font-black shadow-sm hover:bg-kawaii-mint/10 transition-all flex items-center justify-center gap-2"
@@ -259,46 +270,82 @@ const Settings = () => {
                </div>
              </div>
 
-            {/* NOTIFICATION CENTER */}
-            <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-8 shadow-sm border border-white/60 relative">
-               <Sticker emoji="🔔" className="-top-6 right-8" rotate={-10} style={{ fontSize: '2rem' }} />
-               <h3 className="text-xl font-bold text-kawaii-earth mb-6">Notification Center</h3>
-               
-               <p className="text-sm font-medium text-kawaii-earthLight mb-6 leading-relaxed">
-                 Want a daily nudge to check in on yours rituals and symptoms? Send a test to see how Luna looks in your inbox!
-               </p>
+             {/* LEGAL & TRUST */}
+             <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-8 shadow-sm border border-white/60 relative overflow-hidden">
+                <Sticker emoji="🛡️" className="-top-6 right-8 opacity-40" rotate={-10} style={{ fontSize: '2.5rem' }} />
+                <h3 className="text-xl font-bold text-kawaii-earth mb-6">Trust & transparency</h3>
+                <div className="flex flex-col gap-4">
+                   <button 
+                     onClick={() => setActiveModal('privacy')}
+                     className="w-full py-5 bg-white border border-kawaii-bg rounded-2xl flex items-center gap-4 px-6 hover:bg-kawaii-bg transition-all group"
+                   >
+                      <div className="w-10 h-10 rounded-xl bg-pink-50 flex items-center justify-center text-kawaii-pink group-hover:scale-110 transition-transform">
+                        <ShieldCheck size={24} weight="fill" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black text-kawaii-earth text-sm">Privacy Policy</p>
+                        <p className="text-[10px] font-bold text-kawaii-earthLight uppercase tracking-widest">How we protect you</p>
+                      </div>
+                   </button>
 
-               <div className="mb-6">
-                  <span className="text-[10px] font-black text-kawaii-earthLight uppercase tracking-widest pl-1">Recipient Email (for test)</span>
-                  <input 
-                    type="email" 
-                    value={testRecipient}
-                    onChange={e => setTestRecipient(e.target.value)}
-                    placeholder="Where should the test go?"
-                    className="w-full bg-white border border-white rounded-xl px-4 py-3 text-sm text-kawaii-earth font-bold outline-none mt-2 shadow-sm focus:ring-2 ring-kawaii-pink/20"
-                  />
+                   <button 
+                     onClick={() => setActiveModal('terms')}
+                     className="w-full py-5 bg-white border border-kawaii-bg rounded-2xl flex items-center gap-4 px-6 hover:bg-kawaii-bg transition-all group"
+                   >
+                      <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center text-kawaii-lilac group-hover:scale-110 transition-transform">
+                        <FileText size={24} weight="fill" />
+                      </div>
+                      <div className="text-left">
+                        <p className="font-black text-kawaii-earth text-sm">Terms of Service</p>
+                        <p className="text-[10px] font-bold text-kawaii-earthLight uppercase tracking-widest">Usage agreements</p>
+                      </div>
+                   </button>
                 </div>
+             </div>
 
-               <button 
-                 onClick={async () => {
-                   setStatusModal({ isOpen: true, type: 'loading', title: 'Sending...', message: 'Magic notification in progress...' });
-                   const res = await sendTestNotification(testRecipient);
-                   if (res.success) {
-                     setStatusModal({ isOpen: true, type: 'success', title: 'Sent! 📧', message: 'Check your inbox for the morning glow check-in.' });
-                     triggerConfetti();
-                     setTimeout(() => setStatusModal(prev => ({ ...prev, isOpen: false })), 3000);
-                   } else {
-                     setStatusModal({ isOpen: true, type: 'error', title: 'Oopsie! ❌', message: res.message || 'Failed to send notification.' });
-                   }
-                 }}
-                 className="w-full py-4 bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-2xl font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
-               >
-                 Send Test Notification <CaretRight size={18} weight="bold" />
-               </button>
-            </div>
+            {/* NOTIFICATION CENTER - Admin Only */}
+            {profile.role === 'admin' && (
+              <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-8 shadow-sm border border-white/60 relative">
+                <Sticker emoji="🔔" className="-top-6 right-8" rotate={-10} style={{ fontSize: '2rem' }} />
+                <h3 className="text-xl font-bold text-kawaii-earth mb-6">Notification Center</h3>
+                
+                <p className="text-sm font-medium text-kawaii-earthLight mb-6 leading-relaxed">
+                  Want a daily nudge to check in on yours rituals and symptoms? Send a test to see how Luna looks in your inbox!
+                </p>
 
-            {/* ADVANCED SETTINGS (SMTP) */}
-            <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-8 shadow-sm border border-white/60 relative">
+                <div className="mb-6">
+                   <span className="text-[10px] font-black text-kawaii-earthLight uppercase tracking-widest pl-1">Recipient Email (for test)</span>
+                   <input 
+                     type="email" 
+                     value={testRecipient}
+                     onChange={e => setTestRecipient(e.target.value)}
+                     placeholder="Where should the test go?"
+                     className="w-full bg-white border border-white rounded-xl px-4 py-3 text-sm text-kawaii-earth font-bold outline-none mt-2 shadow-sm focus:ring-2 ring-kawaii-pink/20"
+                   />
+                 </div>
+
+                <button 
+                  onClick={async () => {
+                    setStatusModal({ isOpen: true, type: 'loading', title: 'Sending...', message: 'Magic notification in progress...' });
+                    const res = await sendTestNotification(testRecipient);
+                    if (res.success) {
+                      setStatusModal({ isOpen: true, type: 'success', title: 'Sent! 📧', message: 'Check your inbox for the morning glow check-in.' });
+                      triggerConfetti();
+                      setTimeout(() => setStatusModal(prev => ({ ...prev, isOpen: false })), 3000);
+                    } else {
+                      setStatusModal({ isOpen: true, type: 'error', title: 'Oopsie! ❌', message: res.message || 'Failed to send notification.' });
+                    }
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-2xl font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform flex items-center justify-center gap-2"
+                >
+                  Send Test Notification <CaretRight size={18} weight="bold" />
+                </button>
+              </div>
+            )}
+
+            {/* ADVANCED SETTINGS (SMTP) - Admin Only */}
+            {profile.role === 'admin' && (
+              <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-8 shadow-sm border border-white/60 relative">
                <div className="flex justify-between items-center mb-6">
                  <h3 className="text-xl font-bold text-kawaii-earth">Advanced Settings</h3>
                  <button 
@@ -394,6 +441,7 @@ const Settings = () => {
                   </motion.div>
                )}
             </div>
+            )}
 
           </div>
         </div>
@@ -418,34 +466,12 @@ const Settings = () => {
                <Sticker emoji="🎨" className="-top-4 -right-2" rotate={15} style={{ fontSize: '2.5rem' }} />
                <h2 className="text-3xl font-black text-kawaii-earth mb-8">Choose Theme</h2>
                
-               <div className="flex grid grid-cols-2 gap-4 mb-8 w-full">
-                 {[
-                   { id: 'Sakura', l: 'Sakura Dream', e: '🐱', c: 'bg-pink-100 border-kawaii-pink' },
-                   { id: 'Midnight', l: 'Midnight Glow', e: '🐻', c: 'bg-indigo-100 border-indigo-400' },
-                   { id: 'Ocean', l: 'Ocean Breeze', e: '🐱', c: 'bg-blue-100 border-blue-400' },
-                   { id: 'Forest', l: 'Forest Mist', e: '🐻', c: 'bg-green-100 border-green-400' }
-                 ].map(theme => (
-                   <div 
-                     key={theme.id}
-                     onClick={() => setTempTheme(theme.id)}
-                     className={`flex flex-col items-center gap-2 p-4 rounded-[32px] transition-all cursor-pointer border-4 text-center
-                       ${tempTheme === theme.id ? `${theme.c} scale-105 shadow-md` : 'bg-white border-transparent opacity-70'}
-                     `}
-                   >
-                     <span className="text-4xl">{theme.e}</span>
-                     <span className="text-xs font-bold text-kawaii-earth">{theme.l}</span>
-                   </div>
-                 ))}
-               </div>
-
-               <div className="w-full relative mb-8">
-                  <div className="w-full h-24 bg-pink-50/50 border-4 border-white rounded-[24px] p-4 text-center flex items-center justify-center italic text-kawaii-earthLight text-sm">
-                     {tempTheme === 'Midnight' ? "Moonlight and stardust for late-night souls..." : 
-                      tempTheme === 'Sakura' ? "Soft pinks and cherry blossoms for a fresh glow..." :
-                      tempTheme === 'Ocean' ? "Cool blues and calm waves for deep serenity..." :
-                      "Deep greens and mist for a grounded spirit..."}
-                  </div>
-               </div>
+               <div className="w-full mb-8">
+                  <ThemeSwitcher 
+                    currentTheme={tempTheme} 
+                    onSelect={setTempTheme} 
+                  />
+                </div>
 
                <motion.button 
                  whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
@@ -519,6 +545,64 @@ const Settings = () => {
              </motion.div>
           </div>
         )}
+
+        {/* 4. LEGAL MODALS (Privacy / Terms) */}
+        {(activeModal === 'privacy' || activeModal === 'terms') && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+             <motion.div 
+               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+               className="absolute inset-0 bg-white/20 backdrop-blur-xl"
+               onClick={() => setActiveModal(null)}
+             />
+             
+             <motion.div 
+               initial={{ scale: 0.9, opacity: 0, y: 20 }}
+               animate={{ scale: 1, opacity: 1, y: 0 }}
+               exit={{ scale: 0.9, opacity: 0, y: 20 }}
+               className="relative bg-white/90 rounded-[50px] border-[10px] border-white shadow-[0_20px_80px_rgba(0,0,0,0.1)] w-full max-w-2xl flex flex-col items-center overflow-hidden p-8 lg:p-12"
+             >
+                <button 
+                  onClick={() => setActiveModal(null)}
+                  className="absolute top-6 right-6 p-2 rounded-full hover:bg-kawaii-bg transition-colors text-kawaii-earthLight hover:text-kawaii-earth"
+                >
+                  <X size={24} weight="bold" />
+                </button>
+
+                <div className="w-full text-left">
+                  <div className="flex items-center gap-4 mb-2">
+                    {legalContent[activeModal].icon}
+                    <h2 className="text-3xl font-black text-kawaii-earth tracking-tighter">
+                      {legalContent[activeModal].title}
+                    </h2>
+                  </div>
+                  <p className="text-[10px] font-black text-kawaii-earthLight uppercase tracking-widest mb-10 pl-12">
+                     Last Updated — {legalContent[activeModal].updated}
+                  </p>
+
+                  <div className="flex flex-col gap-8 max-h-[400px] overflow-y-auto pr-4 custom-scrollbar">
+                    {legalContent[activeModal].sections.map((sec, i) => (
+                      <div key={i} className="flex flex-col gap-2">
+                         <h3 className="text-lg font-black text-kawaii-earth flex items-center gap-3">
+                           <span className="w-6 h-6 rounded-lg bg-kawaii-bg flex items-center justify-center text-xs">{i+1}</span>
+                           {sec.title}
+                         </h3>
+                         <p className="text-sm font-medium text-kawaii-earthLight leading-relaxed pl-9">
+                            {sec.text}
+                         </p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-10 pt-6 border-t border-kawaii-bg text-center">
+                    <p className="text-[10px] font-bold text-kawaii-earthLight italic italic">
+                       Questions? Reach out to <span className="text-kawaii-pink">privacy@dearluna.app</span>
+                    </p>
+                  </div>
+                </div>
+             </motion.div>
+          </div>
+        )}
+
         {/* 3. STATUS MODAL */}
         {statusModal.isOpen && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">

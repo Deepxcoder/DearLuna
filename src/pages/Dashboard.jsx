@@ -9,11 +9,13 @@ import { getCalendarGrid, getDayPhase, formatMonthHeader } from '../utils/dateUt
 import { useCycleLogic } from '../hooks/useCycleLogic';
 import { getShuffledAffirmations, personalise } from '../utils/affirmations';
 import { format } from 'date-fns';
+import confetti from 'canvas-confetti';
+import SkeletonLoader from '../components/UI/SkeletonLoader';
 
 const Dashboard = () => {
   const { 
     profile, dailyLog, updateDailyLog, loading, currentDate, setCurrentDate, 
-    needsPeriodSetup, setPeriodStartDate, petAction, triggerPetAction, isInitializing, isGuest 
+    needsPeriodSetup, setPeriodStartDate, petAction, petMood, triggerPetAction, isInitializing, isGuest 
   } = useUserProfile();
   const [activeModal, setActiveModal] = useState(null);
   const [periodInput, setPeriodInput] = useState('');
@@ -50,17 +52,27 @@ const Dashboard = () => {
   // Guard for loading state
   if (loading || isInitializing) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center bg-kawaii-bg">
-        <motion.div 
-          animate={{ scale: [1, 1.1, 1], opacity: [0.6, 1, 0.6] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <LunaPet state="idle" size="medium" />
-        </motion.div>
-        <div className="text-kawaii-earth font-black text-2xl mt-8 flex items-center gap-3">
-          🌙 Loading your glow...
+      <div className="ui-p lg:pl-[clamp(1.5rem,4vw,3rem)] flex flex-col gap-10 h-screen w-full bg-kawaii-bg">
+        <div className="flex justify-between items-end mt-4">
+          <div className="flex flex-col gap-3">
+             <SkeletonLoader width="250px" height="32px" borderRadius="10px" />
+             <SkeletonLoader width="400px" height="58px" borderRadius="14px" />
+          </div>
+          <SkeletonLoader width="120px" height="120px" borderRadius="50%" />
         </div>
-        <p className="mt-4 text-kawaii-earthLight text-xs font-bold uppercase tracking-widest">Checking your stars</p>
+        <div className="flex flex-col lg:flex-row gap-6 flex-1 min-h-0">
+          <div className="flex-[3] relative">
+             <SkeletonLoader width="100%" height="100%" borderRadius="40px" />
+          </div>
+          <div className="flex-[2] relative">
+             <SkeletonLoader width="100%" height="100%" borderRadius="40px" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-6 h-32 mb-8">
+           <SkeletonLoader width="100%" height="100%" borderRadius="32px" />
+           <SkeletonLoader width="100%" height="100%" borderRadius="32px" />
+           <SkeletonLoader width="100%" height="100%" borderRadius="32px" />
+        </div>
       </div>
     );
   }
@@ -131,10 +143,23 @@ const Dashboard = () => {
   const exerciseProgress = rituals.exercise ? 100 : 0;
 
   const handleWaterAdd = (amount) => {
+    const currentWater = rituals.water || 0;
+    const newWater = Math.min(currentWater + amount, waterTarget);
+    
     updateDailyLog({
-      rituals: { ...rituals, water: Math.min((rituals.water || 0) + amount, waterTarget) }
+      rituals: { ...rituals, water: newWater }
     });
     triggerPetAction('drinking');
+
+    if (newWater >= waterTarget && currentWater < waterTarget) {
+      confetti({
+        particleCount: 150,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#FFD1DC', '#B39DDB', '#FFECB3'],
+        scalar: 1.2
+      });
+    }
   };
 
   const toggleRitual = (name) => {
@@ -147,12 +172,28 @@ const Dashboard = () => {
     updateDailyLog({
       rituals: { ...rituals, meditation: isDone }
     });
+    if (isDone) {
+      confetti({
+        particleCount: 100,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ['#E0BBE4', '#957DAD', '#D291BC']
+      });
+    }
   };
 
   const setExercise = (isDone) => {
     updateDailyLog({
       rituals: { ...rituals, exercise: isDone }
     });
+    if (isDone) {
+      confetti({
+        particleCount: 100,
+        spread: 60,
+        origin: { y: 0.7 },
+        colors: ['#FFDEC2', '#FFCFA1', '#FFD1A1']
+      });
+    }
   };
 
   return (
@@ -161,23 +202,25 @@ const Dashboard = () => {
       animate={{ opacity: 1 }}
       className="ui-p lg:pl-[clamp(1.5rem,4vw,3rem)] w-full h-full grid grid-rows-[auto_1fr_auto] ui-gap-4 font-body relative overflow-hidden"
     >
-      {/* BACKGROUND STICKERS */}
+      {/* BACKGROUND STICKERS - Simplified for "Just a Bear" aesthetic */}
       <Sticker emoji="✨" className="top-8 left-[40%]" rotate={15} style={{ fontSize: '1rem', zIndex: 0 }} />
-      <Sticker emoji="💖" className="top-32 left-[10%]" rotate={-15} style={{ fontSize: '1.2rem', zIndex: 0 }} />
-      <Sticker emoji="🐻" className="top-24 right-[8%]" rotate={20} style={{ fontSize: '1.8rem', padding: '0.3rem', zIndex: 0 }} />
       <Sticker emoji="⭐" className="top-36 right-[25%]" rotate={-10} style={{ fontSize: '1rem', zIndex: 0 }} />
 
       {/* HEADER SECTION */}
-      <header className="flex justify-between items-end relative z-10 w-full">
+      <header className="flex justify-between items-end relative z-10 w-full mb-6">
         <div>
           <h2 className="font-cursive ui-text-2xl text-kawaii-earthLight font-bold mb-1">Welcome back, {profile.name}!</h2>
           <h1 className="ui-text-3xl font-extrabold text-kawaii-earth tracking-tight">Your Daily Glow</h1>
         </div>
         
-        {/* Rotating Affirmation Bubble with Bear Sticker */}
-        <div className="relative flex items-center gap-2">
+        {/* Floating Bear Companion and Affirmation */}
+        <div className="relative flex items-center gap-6 pr-10">
+          {/* Animated Bear Mascot */}
+          <div className="transform scale-[1.3] -mr-4 -mb-4">
+             <LunaPet state={petAction !== 'idle' ? petAction : petMood} size="medium" />
+          </div>
+
           <div className="relative bg-white rounded-3xl rounded-tl-none px-6 py-4 shadow-sm max-w-sm border-2 border-white/40 min-h-[85px] flex items-center">
-            <Sticker emoji="🐻" className="-top-6 -left-6" rotate={-15} style={{ fontSize: '1.5rem', padding: '0.3rem' }} />
             <AnimatePresence mode="wait">
               <motion.p
                 key={affirmIndex}
@@ -249,7 +292,7 @@ const Dashboard = () => {
               </svg>
 
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none scale-110">
-                <LunaPet state={petAction} size="medium" />
+                {/* Pet removed from dashboard dial per user request - now stays in Habits section */}
               </div>
             </div>
           </div>

@@ -17,12 +17,16 @@ import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/AdminDashboard';
 import Showcase from './pages/Showcase';
+import Meditation from './pages/Meditation';
+import Scrapbook from './pages/Scrapbook';
+import SafeSpace from './pages/SafeSpace';
+import Legal from './pages/Legal';
 
 const AppLayout = ({ children }) => {
   // Detect device size/aspect ratio and inject CSS scale variables globally
   useDeviceScale();
   const location = useLocation();
-  const isScrollablePage = ['/settings', '/profile', '/showcase'].includes(location.pathname);
+  const isScrollablePage = ['/settings', '/profile', '/showcase', '/legal', '/safespace'].includes(location.pathname);
 
   return (
     <div className="w-screen h-screen bg-kawaii-bg flex overflow-hidden">
@@ -43,8 +47,13 @@ const AppLayout = ({ children }) => {
 
 const ProtectedRoute = ({ user, children }) => {
   const location = useLocation();
-  const { needsPeriodSetup } = useUserProfile();
+  const { role, needsPeriodSetup } = useUserProfile();
+  
   if (!user) return <Navigate to="/login" replace />;
+  
+  // Admins bypass all setup barriers
+  if (role === 'admin') return <AppLayout>{children}</AppLayout>;
+  
   if (needsPeriodSetup && location.pathname !== '/dashboard') {
     return <Navigate to="/dashboard" replace />;
   }
@@ -52,7 +61,7 @@ const ProtectedRoute = ({ user, children }) => {
 };
 
 function App() {
-  const { user, isInitializing } = useUserProfile();
+  const { user, role, isInitializing } = useUserProfile();
   console.log('🏗️ App.jsx: Rendering', { user: user?.uid, isInitializing });
 
   if (isInitializing) {
@@ -71,11 +80,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
 
         {/* Protected Routes */}
-        <Route path="/dashboard" element={<ProtectedRoute user={user}><Dashboard /></ProtectedRoute>} />
+        <Route path="/dashboard" element={<ProtectedRoute user={user}>{role === 'admin' ? <Navigate to="/admin" replace /> : <Dashboard />}</ProtectedRoute>} />
         <Route path="/calendar" element={<ProtectedRoute user={user}><Calendar /></ProtectedRoute>} />
         <Route path="/cycle" element={<ProtectedRoute user={user}><Cycle /></ProtectedRoute>} />
         <Route path="/habits" element={<ProtectedRoute user={user}><Habits /></ProtectedRoute>} />
@@ -84,6 +93,10 @@ function App() {
         <Route path="/analytics" element={<ProtectedRoute user={user}><Analytics /></ProtectedRoute>} />
         <Route path="/admin" element={<ProtectedRoute user={user}><AdminDashboard /></ProtectedRoute>} />
         <Route path="/showcase" element={<ProtectedRoute user={user}><Showcase /></ProtectedRoute>} />
+        <Route path="/meditation" element={<ProtectedRoute user={user}><Meditation /></ProtectedRoute>} />
+        <Route path="/scrapbook" element={<ProtectedRoute user={user}><Scrapbook /></ProtectedRoute>} />
+        <Route path="/safespace" element={<ProtectedRoute user={user}><SafeSpace /></ProtectedRoute>} />
+        <Route path="/legal" element={<ProtectedRoute user={user}><Legal /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />
