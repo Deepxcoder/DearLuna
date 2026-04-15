@@ -13,6 +13,31 @@ const PORT = 5000;
 app.use(cors());
 app.use(express.json());
 
+const buildDefaultProfile = (displayName = '') => ({
+  name: displayName?.split(' ')[0] || 'Luna User',
+  lastPeriodDate: new Date().toISOString(),
+  hasSetPeriodDate: false,
+  membership: 'Free Member',
+  avatarId: null,
+  pet: { level: 1, xp: 0, happiness: 100 },
+  settings: { cycleLength: 28, periodLength: 5, waterTarget: 2000 },
+  stats: { totalJournalEntries: 0, currentStreak: 0, entries30Days: 0, entriesYear: 0 },
+  history: [],
+  customHabits: []
+});
+
+const buildDefaultDailyLog = (date) => ({
+  userId: '',
+  date,
+  mood: '',
+  energy: '',
+  symptoms: [],
+  severity: 50,
+  reflection: '',
+  rituals: { water: 0, meditation: false, exercise: false },
+  habits: { skincare: false, journaling: false, reading: false, sleep: false },
+});
+
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dearluna';
 
@@ -29,6 +54,37 @@ mongoose.connect(MONGODB_URI)
   });
 
 // --- USER ROUTES ---
+
+// Bootstrap user + date-specific log in one roundtrip
+app.post('/api/users/:uid/bootstrap', async (req, res) => {
+  try {
+    const { uid } = req.params;
+    const { displayName = '', date } = req.body;
+    const todayDate = date || new Date().toISOString().slice(0, 10);
+
+    let user = await User.findOne({ uid });
+    let isNewUser = false;
+    if (!user) {
+      isNewUser = true;
+      user = await User.create({ uid, ...buildDefaultProfile(displayName) });
+    } else if (typeof user.hasSetPeriodDate === 'undefined') {
+      // Backfill legacy users so existing accounts aren't blocked by onboarding
+      user.hasSetPeriodDate = Boolean(user.lastPeriodDate);
+      await user.save();
+    }
+
+    const baseLog = buildDefaultDailyLog(todayDate);
+    const dailyLog = await DailyLog.findOneAndUpdate(
+      { userId: uid, date: todayDate },
+      { $setOnInsert: { ...baseLog, userId: uid } },
+      { new: true, upsert: true }
+    );
+
+    res.json({ isNewUser, user, dailyLog });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 app.get('/api/users/:uid', async (req, res) => {
   try {
@@ -61,8 +117,12 @@ app.post('/api/users/:uid', async (req, res) => {
 app.get('/api/logs/:uid/:date', async (req, res) => {
   try {
     const { uid, date } = req.params;
-    const log = await DailyLog.findOne({ userId: uid, date });
-    if (!log) return res.status(404).json({ message: 'No log for this date' });
+    const baseLog = buildDefaultDailyLog(date);
+    const log = await DailyLog.findOneAndUpdate(
+      { userId: uid, date },
+      { $setOnInsert: { ...baseLog, userId: uid } },
+      { new: true, upsert: true }
+    );
     res.json(log);
   } catch (error) {
     res.status(500).json({ error: error.message });

@@ -1,9 +1,10 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useLocation, BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 // Layout and Global
 import Sidebar from './components/Navigation/Sidebar';
 import { useUserProfile } from './context/UserProfileContext';
+import { useDeviceScale } from './hooks/useDeviceScale';
 
 // Pages
 import Dashboard from './pages/Dashboard';
@@ -13,23 +14,38 @@ import Settings from './pages/Settings';
 import Habits from './pages/Habits';
 import Login from './pages/Login';
 import Analytics from './pages/Analytics';
+import Profile from './pages/Profile';
 
-const AppLayout = ({ children }) => (
-  <div className="w-full min-h-screen bg-kawaii-bg flex overflow-hidden">
-    <Sidebar />
-    <main className="flex-1 relative overflow-y-auto min-h-screen">
-      {/* Background Gradients */}
-      <div className="fixed top-[-10%] right-[-10%] w-96 h-96 bg-white/40 rounded-full filter blur-[100px] z-0 pointer-events-none" />
-      <div className="fixed bottom-0 left-[20%] w-[500px] h-[500px] bg-kawaii-pink/20 rounded-full filter blur-[120px] z-0 pointer-events-none" />
-      <div className="w-full h-full relative z-10">
-         {children}
-      </div>
-    </main>
-  </div>
-);
+const AppLayout = ({ children }) => {
+  // Detect device size/aspect ratio and inject CSS scale variables globally
+  useDeviceScale();
+  const location = useLocation();
+  const isScrollablePage = ['/settings', '/profile'].includes(location.pathname);
+
+  return (
+    <div className="w-screen h-screen bg-kawaii-bg flex overflow-hidden">
+      <Sidebar />
+      <main className="flex-1 relative h-screen overflow-hidden flex flex-col">
+        {/* Background Gradients */}
+        <div className="fixed top-[-10%] right-[-10%] w-96 h-96 bg-white/40 rounded-full filter blur-[100px] z-0 pointer-events-none" />
+        <div className="fixed bottom-0 left-[20%] w-[500px] h-[500px] bg-kawaii-pink/20 rounded-full filter blur-[120px] z-0 pointer-events-none" />
+        
+        {/* Main Content Area */}
+        <div className={`flex-1 w-full h-full relative z-10 ${isScrollablePage ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+           {children}
+        </div>
+      </main>
+    </div>
+  );
+};
 
 const ProtectedRoute = ({ user, children }) => {
+  const location = useLocation();
+  const { needsPeriodSetup } = useUserProfile();
   if (!user) return <Navigate to="/login" replace />;
+  if (needsPeriodSetup && location.pathname !== '/dashboard') {
+    return <Navigate to="/dashboard" replace />;
+  }
   return <AppLayout>{children}</AppLayout>;
 };
 
@@ -62,10 +78,11 @@ function App() {
         <Route path="/cycle" element={<ProtectedRoute user={user}><Cycle /></ProtectedRoute>} />
         <Route path="/habits" element={<ProtectedRoute user={user}><Habits /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute user={user}><Settings /></ProtectedRoute>} />
+        <Route path="/profile" element={<ProtectedRoute user={user}><Profile /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute user={user}><Analytics /></ProtectedRoute>} />
 
         {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

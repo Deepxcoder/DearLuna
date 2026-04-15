@@ -1,174 +1,311 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import Sticker from '../components/UI/Sticker';
-import { CaretLeft, CaretRight, Drop } from '@phosphor-icons/react';
+import { CaretLeft, CaretRight, Sparkle, Drop, Heart } from '@phosphor-icons/react';
 import { useUserProfile } from '../context/UserProfileContext';
 import { useCycleLogic } from '../hooks/useCycleLogic';
 import { getCalendarGrid, getDayPhase, formatMonthHeader, addMonths, subMonths } from '../utils/dateUtils';
-import { format, addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
+
+const DAYS_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+const PHASE_INSIGHTS = [
+  { key: 'Menstrual', title: 'Menstrual', icon: '🧘', text: 'A softer window. Rest more and keep movement gentle.' },
+  { key: 'Follicular', title: 'Follicular', icon: '🌗', text: 'Energy is rising. Great time to start and plan.' },
+  { key: 'Ovulation', title: 'Ovulatory', icon: '🌕', text: 'Social and expressive phase. Communication feels easier.' },
+  { key: 'Luteal', title: 'Luteal', icon: '⭐', text: 'Focus on wrapping tasks and protecting your energy.' },
+];
+
+const getPhaseMatch = (currentPhase, phaseKey) => {
+  if (!currentPhase) return false;
+  if (phaseKey === 'Ovulation') return currentPhase === 'Ovulation' || currentPhase === 'Ovulatory';
+  return currentPhase === phaseKey;
+};
+
+const PhaseCard = ({ title, icon, text, active }) => (
+  <div
+    className={`rounded-[28px] p-4 border transition-all h-full flex flex-col justify-between ${
+      active
+        ? 'bg-[#FFFDEE] border-[#F3ECA5] shadow-[0_8px_20px_rgba(243,236,165,0.35)]'
+        : 'bg-white/60 border-white/70'
+    }`}
+  >
+    <div>
+      <h4 className="text-lg font-black text-kawaii-earth leading-tight">{title}</h4>
+      <p className="text-xs text-[#5F5046] font-semibold mt-2 leading-relaxed">{text}</p>
+    </div>
+    <div className="text-2xl mt-2">{icon}</div>
+  </div>
+);
 
 const Cycle = () => {
-  const { profile, loading } = useUserProfile();
+  const { profile, loading, updateProfile } = useUserProfile();
   const [viewDate, setViewDate] = useState(new Date());
+  const [calendarMode, setCalendarMode] = useState('month');
 
-  // Wait for profile to calculate cycle logic
   const cycleData = useCycleLogic(profile?.lastPeriodDate);
-  
-  if (loading || !profile) return <div className="p-8 text-kawaii-earth">Loading Luna Dial...</div>;
+
+  if (loading || !profile) return <div className="p-8 text-kawaii-earth">Loading cycle...</div>;
 
   const cycleLength = profile.settings?.cycleLength || 28;
+  const safeDaysUntilPeriod = Number.isFinite(cycleData.daysUntilPeriod) ? cycleData.daysUntilPeriod : cycleLength;
+  const cycleDayRaw = cycleLength - safeDaysUntilPeriod;
+  const cycleDay = Math.min(cycleLength, Math.max(1, cycleDayRaw));
 
-  const handlePrevMonth = () => setViewDate(subMonths(viewDate, 1));
-  const handleNextMonth = () => setViewDate(addMonths(viewDate, 1));
+  const progress = cycleDay / cycleLength;
+  const ringRadius = 108;
+  const circumference = 2 * Math.PI * ringRadius;
 
-  const daysLabels = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   const grid = getCalendarGrid(viewDate);
+  const monthTiles = useMemo(() => (
+    Array.from({ length: 12 }, (_, i) => new Date(viewDate.getFullYear(), i, 1))
+  ), [viewDate]);
 
-  // Cycle progress calculation for the dial
-  const cycleDay = cycleLength - (cycleData.daysUntilPeriod || 0);
-  const cyclePercent = (cycleDay / cycleLength) * 100;
-  
-  // Adjusted SVG path length is ~904 for radius 144
-  const dashOffset = 904 - (904 * (cyclePercent / 100));
+  const handlePrev = () => {
+    if (calendarMode === 'month') setViewDate(subMonths(viewDate, 1));
+    else setViewDate(new Date(viewDate.getFullYear() - 1, viewDate.getMonth(), 1));
+  };
 
-  // Forecast Logic based on lastPeriodDate
+  const handleNext = () => {
+    if (calendarMode === 'month') setViewDate(addMonths(viewDate, 1));
+    else setViewDate(new Date(viewDate.getFullYear() + 1, viewDate.getMonth(), 1));
+  };
+
+  const handleSetPeriodStart = (date) => {
+    if (window.confirm(`Set ${format(date, 'MMMM dd')} as your period start date?`)) {
+      updateProfile({ lastPeriodDate: date.toISOString() });
+    }
+  };
+
+  const ovulationDayNumber = Math.max(1, cycleLength - 14);
+  const fertileStartDayNumber = Math.max(1, ovulationDayNumber - 4);
+  const lutealStartDayNumber = Math.min(cycleLength, ovulationDayNumber + 1);
+
   const lastPeriod = new Date(profile.lastPeriodDate);
   const forecast = [
-    { name: 'Follicular', date: format(addDays(lastPeriod, 5), 'MMM dd'), color: 'bg-purple-200' },
-    { name: 'Ovulatory', date: format(addDays(lastPeriod, Math.floor(cycleLength/2)), 'MMM dd'), color: 'bg-[#7A593E]' },
-    { name: 'Luteal', date: format(addDays(lastPeriod, Math.floor(cycleLength * 0.7)), 'MMM dd'), color: 'bg-yellow-400' },
+    {
+      key: 'Fertility',
+      label: 'Fertility',
+      day: fertileStartDayNumber,
+      date: format(addDays(lastPeriod, fertileStartDayNumber - 1), 'MMM dd'),
+      active: cycleDay >= fertileStartDayNumber,
+    },
+    {
+      key: 'Ovulatory',
+      label: 'Ovulatory',
+      day: ovulationDayNumber,
+      date: format(addDays(lastPeriod, ovulationDayNumber - 1), 'MMM dd'),
+      active: cycleDay >= ovulationDayNumber,
+    },
+    {
+      key: 'Luteal',
+      label: 'Luteal',
+      day: lutealStartDayNumber,
+      date: format(addDays(lastPeriod, lutealStartDayNumber - 1), 'MMM dd'),
+      active: cycleDay >= lutealStartDayNumber,
+    },
   ];
 
+  const moonMarkers = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘', '🌑', '🌒'];
+
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="w-full flex justify-center max-w-6xl mx-auto p-8 font-body relative lg:pl-16"
+      className="w-full h-full max-w-[1600px] mx-auto ui-p lg:p-6 font-body overflow-y-auto"
     >
-      <div className="flex flex-col w-full">
-        <h2 className="text-4xl font-extrabold text-kawaii-earth tracking-tight mb-8">
-          Cycle Tracking
-        </h2>
+      <div className="flex items-center gap-2 mb-5">
+        <h1 className="ui-text-3xl font-black text-kawaii-earth tracking-tight">Cycle</h1>
+        <Sparkle size={24} weight="fill" className="text-[#8C5D70]" />
+      </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 w-full">
-           {/* LEFT LARGE COLUMN: Luna Dial */}
-           <div className="flex-[3] flex flex-col gap-8 relative">
-              <h3 className="text-xl font-bold text-kawaii-earth">Luna Dial</h3>
-              <Sticker emoji="🐾" className="-top-2 right-[20%]" rotate={15} style={{ fontSize: '1.5rem', padding: '0.2rem' }} />
-              
-              <div className="bg-white/40 backdrop-blur-md rounded-[40px] p-12 shadow-sm border border-white/60 relative w-full h-[460px] flex items-center justify-center overflow-hidden">
-                 <Sticker emoji="🐱" className="top-[20%] -left-6" rotate={-15} style={{ fontSize: '2.5rem' }} />
-                 <Sticker emoji="🐱" className="bottom-[20%] right-10" rotate={15} style={{ fontSize: '2rem' }} />
+      <div className="grid grid-cols-1 xl:grid-cols-[1.08fr_0.92fr] gap-6">
+        <section className="bg-white/70 rounded-[40px] border border-white/70 shadow-sm p-5 lg:p-6 relative">
+          <h2 className="ui-text-2xl font-black text-kawaii-earth mb-4">Luna Dial</h2>
+          <Sticker emoji="🐾" className="-top-5 right-6" rotate={8} style={{ fontSize: '2rem' }} />
 
-                 <div className="relative w-80 h-80">
-                    <div className="absolute inset-0 border-[16px] border-[#957DAD] rounded-full opacity-30"></div>
-                    
-                    <svg className="absolute inset-0 w-full h-full transform -rotate-90">
-                       <circle cx="160" cy="160" r="144" stroke="rgba(112,68,95,0.1)" strokeWidth="16" fill="none" />
-                       <circle 
-                         cx="160" cy="160" r="144" 
-                         stroke="#70445f" strokeWidth="16" fill="none" 
-                         strokeDasharray="904" 
-                         strokeDashoffset={dashOffset} 
-                         strokeLinecap="round" 
-                         className="transition-all duration-1000"
-                       />
-                    </svg>
+          <div className="relative ui-cycle-dial mx-auto mt-4 flex items-center justify-center">
+            {moonMarkers.map((moon, idx) => {
+              const angle = (idx / moonMarkers.length) * 360 - 90;
+              return (
+                <div
+                  key={`moon-${idx}`}
+                  className="absolute left-1/2 top-1/2 w-8 h-8 rounded-full bg-white border-2 border-[#EADFE4] shadow-sm flex items-center justify-center text-sm"
+                  style={{ transform: `translate(-50%, -50%) rotate(${angle}deg) translate(130px) rotate(${-angle}deg)` }}
+                >
+                  {moon}
+                </div>
+              );
+            })}
 
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                       <span className="text-5xl font-black text-[#7A593E] mb-1">Day {cycleDay}</span>
-                       <span className="text-sm font-bold text-kawaii-earthLight uppercase tracking-tight">- {cycleData.currentPhase} Phase</span>
-                    </div>
+            <svg className="absolute inset-0 w-full h-full -rotate-90" viewBox="0 0 240 240">
+              <circle cx="120" cy="120" r={ringRadius} stroke="#F6EEA7" strokeWidth="11" fill="none" />
+              <circle
+                cx="120"
+                cy="120"
+                r={ringRadius}
+                stroke="#7C4A59"
+                strokeWidth="11"
+                fill="none"
+                strokeDasharray={circumference}
+                strokeDashoffset={circumference - (circumference * progress)}
+                strokeLinecap="round"
+              />
+            </svg>
 
-                    {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
-                      <div key={i} className="absolute inset-0 pointer-events-none" style={{ transform: `rotate(${deg}deg)` }}>
-                         <div className={`absolute top-[-26px] left-[50%] -translate-x-[50%] w-6 h-6 rounded-full bg-white shadow-sm border-2 border-white flex items-center justify-center text-[10px]`}>
-                            {i % 2 === 0 ? '🌙' : '✨'}
-                         </div>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-           </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+              <span className="ui-text-3xl font-black text-[#2F231A] leading-none">Day {cycleDay}</span>
+              <span className="ui-text-lg font-bold text-[#403329] mt-1">- {cycleData.currentPhase} Phase</span>
+            </div>
 
-           {/* RIGHT NARROW COLUMN: Interactive Calendar & Forecast */}
-           <div className="flex-[2] flex flex-col gap-8 relative">
-              <h3 className="text-xl font-bold text-kawaii-earth">Interactive Schedule</h3>
-              <div className="bg-white/40 backdrop-blur-md rounded-[40px] p-8 shadow-sm border border-white/60 relative w-full">
-                 <div className="flex justify-between items-center mb-6">
-                    <h4 className="text-xl font-bold text-kawaii-earth">{formatMonthHeader(viewDate)}</h4>
-                    <div className="flex items-center gap-2">
-                      <button onClick={handlePrevMonth} className="text-kawaii-earth hover:scale-110 transition-transform"><CaretLeft size={20} weight="bold" /></button>
-                      <button onClick={handleNextMonth} className="text-kawaii-earth hover:scale-110 transition-transform"><CaretRight size={20} weight="bold" /></button>
-                    </div>
-                 </div>
+            <div className="absolute left-[7%] top-[52%] text-2xl">🐱</div>
+            <div className="absolute right-[7%] top-[52%] text-2xl">🐱</div>
+            <div className="absolute bottom-[4%] left-[38%] text-2xl">🐾</div>
+            <div className="absolute bottom-[4%] right-[38%] text-2xl">🐾</div>
+          </div>
+        </section>
 
-                 <div className="grid grid-cols-7 gap-y-2 text-center">
-                    {daysLabels.map((d, i) => <div key={`col-${i}`} className="text-[10px] font-bold text-kawaii-earthLight uppercase">{d}</div>)}
-                    {grid.map((day, i) => {
-                      const phase = getDayPhase(day.date, profile.lastPeriodDate);
-                      const isPeriod = phase === 'period';
-                      const isFertile = phase === 'fertile';
-                      return (
-                        <div key={i} className="flex justify-center relative my-1 h-8 items-center">
-                           {isFertile && day.isCurrentMonth && <div className="absolute inset-0 bg-pink-100/40 rounded-full"></div>}
-                           <span className={`text-xs font-bold w-7 h-7 flex items-center justify-center rounded-full
-                              ${!day.isCurrentMonth ? 'text-gray-300' : 'text-kawaii-earth'}
-                              ${day.isToday ? 'bg-gradient-to-r from-kawaii-pink to-kawaii-lilac text-white shadow-md' : ''}
-                           `}>
-                              {isPeriod && day.isCurrentMonth ? <Drop weight="fill" className="text-red-600" size={14} /> : day.dayNumber}
-                           </span>
-                        </div>
-                      );
-                    })}
-                 </div>
-              </div>
+        <section className="bg-white/70 rounded-[40px] border border-white/70 shadow-sm p-5 lg:p-6 relative">
+          <h2 className="ui-text-2xl font-black text-kawaii-earth mb-4">Interactive Calendar</h2>
 
-              {/* LUNA FORECAST */}
-              <h3 className="text-xl font-bold text-kawaii-earth">Forecast</h3>
-              <div className="bg-white/40 backdrop-blur-md rounded-[32px] p-6 pt-10 pb-12 shadow-sm border border-white/60 relative w-full overflow-hidden">
-                 <div className="w-full h-1 bg-gray-200 mt-6 relative rounded-full">
-                    {forecast.map((f, i) => (
-                      <div key={f.name} className="absolute top-1/2 -translate-y-1/2 flex flex-col items-center" style={{ left: `${20 + (i * 30)}%` }}>
-                        <span className={`w-4 h-4 ${f.color} rounded-full border-[3px] border-white shadow-sm z-10 relative ${cycleData.currentPhase === f.name ? 'scale-150 ring-4 ring-white' : 'opacity-60'}`}></span>
-                        <span className="text-[9px] font-black text-kawaii-earthLight uppercase tracking-widest absolute -top-8 w-16 text-center">{f.name}</span>
-                        <span className="text-[10px] font-bold text-kawaii-earth mt-6">{f.date}</span>
-                      </div>
-                    ))}
-                 </div>
-              </div>
-           </div>
-        </div>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="ui-text-xl font-black text-kawaii-earth">
+              {calendarMode === 'month' ? formatMonthHeader(viewDate) : format(viewDate, 'yyyy')}
+            </h3>
 
-        {/* PHASE INSIGHT */}
-        <div className="flex flex-col gap-4 mt-8 w-full mb-12 relative z-10">
-           <h3 className="text-xl font-bold text-kawaii-earth">Phase Insight</h3>
-           <div className="flex flex-col lg:flex-row gap-4 w-full">
-              {[
-                { t: 'Menstrual', x: 'Inward and reflective time. Focus on rest.', i: '🧘‍♀️' },
-                { t: 'Follicular', x: 'Energy rising! Start new projects.', i: '🌗' },
-                { t: 'Ovulatory', x: 'Social and vibrant. Peak energy.', i: '🐾' },
-                { t: 'Luteal', x: 'Winding down. Focus on completion.', i: '★' }
-              ].map(p => (
-                <PhaseCard key={p.t} title={p.t} text={p.x} icon={p.i} active={cycleData.currentPhase === p.t} />
+            <button
+              type="button"
+              onClick={() => setCalendarMode(prev => (prev === 'month' ? 'year' : 'month'))}
+              className="flex items-center gap-3"
+            >
+              <span className="text-sm font-bold text-kawaii-earth">Month/Year</span>
+              <span className={`w-12 h-7 rounded-full p-1 transition-colors ${calendarMode === 'year' ? 'bg-[#8E516D]' : 'bg-[#D9C7D2]'}`}>
+                <span className={`block w-5 h-5 bg-white rounded-full transition-transform ${calendarMode === 'year' ? 'translate-x-5' : 'translate-x-0'}`} />
+              </span>
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 text-center mb-2">
+            {DAYS_LABELS.map((d, i) => (
+              <div key={`head-${i}`} className="text-xs font-black text-[#6A594F]">{d}</div>
+            ))}
+          </div>
+
+          {calendarMode === 'month' ? (
+            <div className="grid grid-cols-7 gap-y-1 text-center select-none">
+              {grid.map((day, i) => {
+                const phase = getDayPhase(day.date, profile.lastPeriodDate);
+                const isPeriod = phase === 'period';
+                const isFertile = phase === 'fertile';
+                return (
+                  <div
+                    key={i}
+                    onClick={() => day.isCurrentMonth && handleSetPeriodStart(day.date)}
+                    className="flex justify-center relative items-center h-9 cursor-pointer"
+                  >
+                    <span
+                      className={`text-sm font-bold w-8 h-8 flex items-center justify-center rounded-full transition-all relative z-10 ${
+                        !day.isCurrentMonth
+                          ? 'text-gray-300 opacity-30'
+                          : day.isToday
+                            ? 'bg-[#8E516D] text-white'
+                            : 'text-kawaii-earth'
+                      } ${isFertile && day.isCurrentMonth && !day.isToday ? 'bg-[#F6DDE7]' : ''}`}
+                    >
+                      {isPeriod && day.isCurrentMonth ? <Drop weight="fill" size={14} className="text-[#8E516D]" /> : day.dayNumber}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3 mt-2">
+              {monthTiles.map((m) => {
+                const isActive = m.getMonth() === viewDate.getMonth();
+                return (
+                  <button
+                    key={m.toISOString()}
+                    type="button"
+                    onClick={() => {
+                      setViewDate(m);
+                      setCalendarMode('month');
+                    }}
+                    className={`rounded-2xl py-3 text-sm font-black transition-colors ${isActive ? 'bg-[#8E516D] text-white' : 'bg-white/70 text-kawaii-earth hover:bg-[#F6DDE7]'}`}
+                  >
+                    {format(m, 'MMM')}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="flex items-center justify-end gap-2 mt-4">
+            <button onClick={handlePrev} className="w-9 h-9 rounded-full bg-white/80 hover:bg-[#F6DDE7] flex items-center justify-center">
+              <CaretLeft size={16} weight="bold" className="text-kawaii-earth" />
+            </button>
+            <button onClick={handleNext} className="w-9 h-9 rounded-full bg-white/80 hover:bg-[#F6DDE7] flex items-center justify-center">
+              <CaretRight size={16} weight="bold" className="text-kawaii-earth" />
+            </button>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="ui-text-2xl font-black text-kawaii-earth mb-3">Phase Insight</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {PHASE_INSIGHTS.map((phase) => (
+              <PhaseCard
+                key={phase.key}
+                title={phase.title}
+                icon={phase.icon}
+                text={phase.text}
+                active={getPhaseMatch(cycleData.currentPhase, phase.key)}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="ui-text-2xl font-black text-kawaii-earth mb-3">Luna Forecast</h2>
+          <div className="bg-white/70 rounded-[34px] border border-white/70 shadow-sm p-6 h-full">
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              {forecast.map((f) => (
+                <div key={f.key} className="text-center">
+                  <div className="text-sm font-black text-kawaii-earth">{f.label}</div>
+                  <div className="text-xs font-bold text-[#6A594F] mt-1">{f.date}</div>
+                </div>
               ))}
-           </div>
-        </div>
+            </div>
+
+            <div className="relative mt-5 mb-4 h-8">
+              <div className="absolute left-0 right-0 top-1/2 -translate-y-1/2 h-1 bg-[#D7C5D0] rounded-full" />
+              <div
+                className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-[#8E516D] rounded-full transition-all duration-500"
+                style={{ width: `${Math.min(100, Math.max(0, (cycleDay / cycleLength) * 100))}%` }}
+              />
+              {forecast.map((f) => {
+                const left = `${(f.day / cycleLength) * 100}%`;
+                return (
+                  <div key={`dot-${f.key}`} className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2" style={{ left }}>
+                    <div className={`w-4 h-4 rounded-full border-2 ${f.active ? 'bg-[#8E516D] border-[#8E516D]' : 'bg-white border-[#8E516D]'}`} />
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mt-3">
+              {forecast.map((f) => (
+                <div key={`date-${f.key}`} className="text-center text-base font-black text-[#4A3525]">{f.date}</div>
+              ))}
+            </div>
+
+            <div className="mt-6 text-sm font-semibold text-[#5F5046] flex items-center gap-2">
+              <Heart size={16} weight="fill" className="text-[#8E516D]" />
+              Day {cycleDay} of {cycleLength} · {Math.max(0, safeDaysUntilPeriod)} days until next period
+            </div>
+          </div>
+        </section>
       </div>
     </motion.div>
   );
 };
-
-const PhaseCard = ({ title, text, icon, active }) => (
-  <div className={`flex-1 p-6 rounded-[32px] flex flex-col justify-between transition-all duration-500 border
-    ${active ? 'bg-white border-yellow-200 shadow-md scale-105 z-10' : 'bg-white/30 border-white/60 opacity-60'}
-  `}>
-     <div>
-       <h4 className="font-bold text-kawaii-earth">{title}</h4>
-       <p className="text-[11px] font-semibold text-kawaii-earthLight leading-relaxed mt-2">{text}</p>
-     </div>
-     <span className={`text-2xl mt-4 ${active ? 'animate-bounce-slow' : ''}`}>{icon}</span>
-  </div>
-);
 
 export default Cycle;

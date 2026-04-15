@@ -12,6 +12,109 @@
   }
 }
 
+/* ─── Global Dark Theme ───────────────────────────────────────────────────── */
+html.theme-dark body {
+  background-color: #05071a;
+  color: #eef1ff;
+  background-image:
+    radial-gradient(circle at 10% 20%, rgba(100, 88, 190, 0.28), transparent 42%),
+    radial-gradient(circle at 86% 24%, rgba(116, 166, 255, 0.22), transparent 36%),
+    radial-gradient(circle at 74% 76%, rgba(129, 99, 212, 0.2), transparent 40%),
+    linear-gradient(180deg, #090b25 0%, #080b29 55%, #06071f 100%);
+}
+
+html.theme-dark body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background-image:
+    radial-gradient(2px 2px at 10% 15%, rgba(255,255,255,0.9), transparent 65%),
+    radial-gradient(2px 2px at 22% 72%, rgba(255,255,255,0.75), transparent 65%),
+    radial-gradient(2px 2px at 40% 26%, rgba(255,255,255,0.75), transparent 65%),
+    radial-gradient(2px 2px at 58% 84%, rgba(255,255,255,0.8), transparent 65%),
+    radial-gradient(2px 2px at 76% 33%, rgba(255,255,255,0.85), transparent 65%),
+    radial-gradient(2px 2px at 91% 63%, rgba(255,255,255,0.75), transparent 65%);
+  opacity: 0.9;
+}
+
+html.theme-dark .text-kawaii-earth {
+  color: #f2f1ff !important;
+}
+
+html.theme-dark .text-kawaii-earthLight {
+  color: #b7b8d9 !important;
+}
+
+html.theme-dark .bg-kawaii-bg {
+  background-color: #0f1235 !important;
+}
+
+html.theme-dark .bg-kawaii-pink {
+  background-color: #7b62d9 !important;
+  color: #ffffff !important;
+}
+
+html.theme-dark .from-kawaii-pink {
+  --tw-gradient-from: #8f6fff var(--tw-gradient-from-position) !important;
+}
+
+html.theme-dark .to-kawaii-lilac {
+  --tw-gradient-to: #5344c4 var(--tw-gradient-to-position) !important;
+}
+
+html.theme-dark .bg-white,
+html.theme-dark [class*="bg-white/"] {
+  background-color: rgba(20, 24, 61, 0.72) !important;
+}
+
+html.theme-dark [class*="border-white"] {
+  border-color: rgba(173, 181, 255, 0.22) !important;
+}
+
+html.theme-dark [class*="shadow-"],
+html.theme-dark .shadow-sm,
+html.theme-dark .shadow-soft {
+  box-shadow: 0 14px 40px rgba(8, 12, 46, 0.45) !important;
+}
+
+html.theme-dark .sticker-chip {
+  background: rgba(121, 128, 210, 0.18) !important;
+  border-color: rgba(198, 204, 255, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(7, 10, 40, 0.5) !important;
+}
+
+.dark-celestial {
+  display: none;
+}
+
+html.theme-dark .dark-celestial {
+  display: block;
+  position: absolute;
+  z-index: 2;
+  pointer-events: none;
+  text-shadow: 0 0 14px rgba(214, 223, 255, 0.75);
+  opacity: 0.85;
+}
+
+html.theme-dark .dark-celestial-1 { top: 18px; right: 32%; font-size: 1.2rem; }
+html.theme-dark .dark-celestial-2 { bottom: 20px; left: 6%; font-size: 2rem; }
+html.theme-dark .dark-celestial-3 { top: 28%; right: 4%; font-size: 1.35rem; }
+html.theme-dark .dark-celestial-4 { bottom: 30%; left: 46%; font-size: 1rem; }
+
+html.theme-dark .habits-page .daily-reflection-card {
+  background-color: rgba(46, 38, 84, 0.55) !important;
+  border-color: rgba(174, 183, 255, 0.2) !important;
+}
+
+html.theme-dark .habits-page .water-tracker-card,
+html.theme-dark .habits-page .pet-zen-card,
+html.theme-dark .habits-page .habit-card-shell {
+  background-color: rgba(25, 30, 76, 0.62) !important;
+  border-color: rgba(174, 183, 255, 0.2) !important;
+}
+
 @layer utilities {
   .glass-panel {
     @apply bg-white/70 backdrop-blur-[12px] border border-white/50 shadow-sticker;
@@ -65,5 +168,45 @@
     background-repeat: no-repeat;
     background-position: center;
     background-size: 50%;
+  }
+}
+
+/* ─── Device-Scale Utility Classes ───────────────────────────────────────────
+   Consume CSS custom properties injected by useDeviceScale.js at runtime.
+   ────────────────────────────────────────────────────────────────────────── */
+@layer utilities {
+  /* Typography */
+  .ui-text-xs   { font-size: var(--ui-font-xs,   9px); }
+  .ui-text-sm   { font-size: var(--ui-font-sm,   11px); }
+  .ui-text-base { font-size: var(--ui-font-base, 14px); }
+  .ui-text-lg   { font-size: var(--ui-font-lg,   18px); }
+  .ui-text-xl   { font-size: var(--ui-font-xl,   22px); }
+  .ui-text-2xl  { font-size: var(--ui-font-2xl,  28px); }
+  .ui-text-3xl  { font-size: var(--ui-font-3xl,  36px); }
+
+  /* Spacing */
+  .ui-p         { padding: var(--ui-card-pad,  22px); }
+  .ui-p-sm      { padding: var(--ui-space-4,   16px); }
+  .ui-gap-2     { gap: var(--ui-space-2, 8px); }
+  .ui-gap-4     { gap: var(--ui-space-4, 16px); }
+  .ui-gap-6     { gap: var(--ui-space-6, 24px); }
+  .ui-mb-4      { margin-bottom: var(--ui-space-4, 16px); }
+  .ui-mb-6      { margin-bottom: var(--ui-space-6, 24px); }
+
+  /* Shape */
+  .ui-rounded    { border-radius: var(--ui-radius, 32px); }
+  .ui-rounded-sm { border-radius: calc(var(--ui-radius, 32px) * 0.6); }
+
+  /* Dial sizing */
+  .ui-cycle-dial {
+    width:  var(--ui-cycle-dial, 220px);
+    height: var(--ui-cycle-dial, 220px);
+    flex-shrink: 0;
+  }
+
+  /* Icon sizing */
+  .ui-icon {
+    width:  var(--ui-icon-size, 20px);
+    height: var(--ui-icon-size, 20px);
   }
 }

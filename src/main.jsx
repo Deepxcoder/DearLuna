@@ -4,7 +4,7 @@ import App from './App.jsx'
 import { UserProfileProvider } from './context/UserProfileContext';
 import './index.css'
 
-console.log('🌅 [DearLuna] Mounting initiated...');
+console.log('🌅 [DearLuna] Mounting initiated at ' + new Date().toLocaleTimeString());
 
 const root = document.getElementById('root');
 if (root) {

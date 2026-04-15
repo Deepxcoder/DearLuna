@@ -57,4 +57,4 @@ export const getDayPhase = (targetDate, lastPeriodDateStr, cycleLength = 28) => 
 export const formatMonthHeader = (date) => format(date, 'MMMM yyyy');
 export const formatDetailDate = (date) => format(date, 'MMMM d, yyyy');
 
-export { addMonths, subMonths, isSameDay };
+export { addMonths, subMonths, isSameDay, format };

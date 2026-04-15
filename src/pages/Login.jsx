@@ -6,8 +6,8 @@ import { useUserProfile } from '../context/UserProfileContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { loginWithGoogle, loading } = useUserProfile();
-
+  const { loginWithGoogle, loginAsGuest, loading } = useUserProfile();
+  
   const handleGoogleLogin = async (e) => {
     e.preventDefault();
     await loginWithGoogle();
@@ -16,6 +16,7 @@ const Login = () => {
 
   const handleGuestLogin = (e) => {
     e.preventDefault();
+    loginAsGuest();
     navigate('/dashboard');
   };
 

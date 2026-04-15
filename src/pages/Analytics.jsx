@@ -62,15 +62,15 @@ const Analytics = () => {
     <motion.div 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-8 w-full max-w-7xl mx-auto flex flex-col gap-10 min-h-screen font-body relative lg:pl-16"
+      className="ui-p w-full max-w-7xl mx-auto flex flex-col ui-gap-6 h-full overflow-y-auto font-body relative lg:pl-16"
     >
       <header className="flex justify-between items-end">
         <div>
-          <h2 className="text-4xl font-extrabold text-kawaii-earth tracking-tight mb-2 flex items-center gap-3">
+          <h2 className="ui-text-3xl font-extrabold text-kawaii-earth tracking-tight mb-2 flex items-center gap-3">
              <ChartBar weight="fill" className="text-kawaii-pink" /> 
              Analytics
           </h2>
-          <p className="text-kawaii-earthLight font-bold uppercase text-xs tracking-widest pl-1">Insights for your last {daysCount} days</p>
+          <p className="ui-text-xs text-kawaii-earthLight font-bold uppercase tracking-widest pl-1">Insights for your last {daysCount} days</p>
         </div>
         
         <div className="flex bg-white/40 backdrop-blur-md rounded-full border border-white/60 p-1 shadow-inner shrink-0">
@@ -89,8 +89,8 @@ const Analytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
         {/* MOOD & WATER TRENDS */}
-        <div className="bg-white/60 backdrop-blur-md rounded-[40px] p-8 border-2 border-white shadow-sm relative overflow-hidden h-[400px] flex flex-col">
-            <h3 className="text-xl font-bold text-kawaii-earth mb-6 flex items-center gap-2">
+        <div className="bg-white/60 backdrop-blur-md rounded-[40px] ui-p border-2 border-white shadow-sm relative overflow-hidden flex flex-col" style={{ height: 'clamp(240px, 35vh, 400px)' }}>
+            <h3 className="ui-text-lg font-bold text-kawaii-earth mb-6 flex items-center gap-2">
              <TrendUp weight="bold" /> Mood & Hydration
            </h3>
            <div className="flex-1 w-full">
@@ -115,43 +115,82 @@ const Analytics = () => {
         </div>
 
         {/* SYMPTOM DISTRIBUTION */}
-        <div className="bg-white/60 backdrop-blur-md rounded-[40px] p-8 border-2 border-white shadow-sm relative overflow-hidden h-[400px] flex flex-col">
-           <h3 className="text-xl font-bold text-kawaii-earth mb-6 flex items-center gap-2">
-             <Heartbeat weight="bold" /> Top Symptoms
-           </h3>
-           <div className="flex-1 w-full flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                 <PieChart>
+        <div
+          className="bg-white/60 backdrop-blur-md rounded-[40px] ui-p border-2 border-white shadow-sm relative flex flex-col"
+          style={{ height: 'clamp(240px, 35vh, 400px)' }}
+        >
+          <h3 className="ui-text-lg font-bold text-kawaii-earth mb-4 flex items-center gap-2 shrink-0">
+            <Heartbeat weight="bold" /> Top Symptoms
+          </h3>
+
+          {symptomData.length === 0 ? (
+            /* Empty state */
+            <div className="flex-1 flex flex-col items-center justify-center text-center gap-3">
+              <span className="text-4xl">🩷</span>
+              <p className="text-xs font-bold text-kawaii-earthLight uppercase tracking-widest">
+                No symptoms logged yet
+              </p>
+              <p className="text-xs text-kawaii-earthLight max-w-[180px] leading-relaxed">
+                Log your daily symptoms in Settings to see your trends here.
+              </p>
+            </div>
+          ) : (
+            /* Pie + Legend side by side */
+            <div className="flex-1 flex items-center gap-4 min-h-0">
+              {/* Pie chart — takes the left 60% */}
+              <div className="flex-[3] h-full min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
                     <Pie
                       data={symptomData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={100}
-                      paddingAngle={5}
+                      innerRadius="30%"
+                      outerRadius="55%"
+                      paddingAngle={4}
                       dataKey="value"
                     >
                       {symptomData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} cornerRadius={10} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                          cornerRadius={6}
+                        />
                       ))}
                     </Pie>
-                    <Tooltip />
-                 </PieChart>
-              </ResponsiveContainer>
-              <div className="flex flex-col gap-2 pl-4">
-                 {symptomData.map((s, idx) => (
-                   <div key={s.name} className="flex items-center gap-2">
-                     <div className="w-3 h-3 rounded-full" style={{ background: COLORS[idx % COLORS.length] }} />
-                     <span className="text-xs font-bold text-kawaii-earth">{s.name}</span>
-                   </div>
-                 ))}
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '16px',
+                        border: 'none',
+                        boxShadow: '0 8px 20px rgba(0,0,0,0.08)',
+                        fontWeight: 'bold',
+                        fontSize: '12px',
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
               </div>
-           </div>
+
+              {/* Legend — takes the right 40% */}
+              <div className="flex-[2] flex flex-col gap-2 overflow-y-auto max-h-full pr-1">
+                {symptomData.map((s, idx) => (
+                  <div key={s.name} className="flex items-center gap-2 shrink-0">
+                    <div
+                      className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: COLORS[idx % COLORS.length] }}
+                    />
+                    <span className="text-xs font-bold text-kawaii-earth truncate capitalize">{s.name}</span>
+                    <span className="ml-auto text-[10px] font-black text-kawaii-earthLight">{s.value}x</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* WATER INTAKE */}
-        <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[40px] p-8 border-2 border-white shadow-sm relative overflow-hidden h-[300px] flex flex-col">
-           <h3 className="text-xl font-bold text-kawaii-earth mb-6 flex items-center gap-2">
+        <div className="lg:col-span-2 bg-white/60 backdrop-blur-md rounded-[40px] ui-p border-2 border-white shadow-sm relative overflow-hidden flex flex-col" style={{ height: 'clamp(180px, 28vh, 300px)' }}>
+           <h3 className="ui-text-lg font-bold text-kawaii-earth mb-6 flex items-center gap-2">
               <Drop weight="fill" className="text-blue-400" /> Daily Hydration (ml)
            </h3>
            <div className="flex-1 w-full">
@@ -171,9 +210,9 @@ const Analytics = () => {
       </div>
 
       {/* INSIGHT CARD */}
-      <div className="bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-[40px] p-10 text-white relative shadow-lg">
-         <Sticker emoji="🐱" className="-top-6 -left-6" rotate={-15} style={{ fontSize: '3rem', border: '5px solid white' }} />
-         <h3 className="text-2xl font-black mb-2">Luna Insight</h3>
+      <div className="bg-gradient-to-r from-kawaii-pink to-kawaii-lilac ui-rounded ui-p text-white relative shadow-lg">
+         <Sticker emoji="🐱" className="-top-6 -left-6" rotate={-15} style={{ fontSize: 'var(--ui-font-3xl, 3rem)', border: '5px solid white' }} />
+         <h3 className="ui-text-2xl font-black mb-2">Luna Insight</h3>
          <p className="text-lg font-bold opacity-90 max-w-2xl">
             "We've noticed you felt a bit **stressed** during your follicular phase this month. Maybe try adding 5 minutes of extra meditation in your next cycle? You've got this, {profile.name}! ✨"
          </p>
