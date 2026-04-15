@@ -1,13 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;500;700;800&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-kawaii-bg text-gray-800 font-body min-h-screen antialiased;
-    background-image: radial-gradient(circle at top right, rgba(255, 183, 197, 0.4), transparent 40%),
-                      radial-gradient(circle at bottom left, rgba(224, 187, 228, 0.4), transparent 40%);
+    @apply bg-kawaii-bg text-kawaii-earth font-body min-h-screen antialiased;
+    background-image: radial-gradient(circle at 10% 20%, rgba(255, 237, 240, 0.8), transparent 50%),
+                      radial-gradient(circle at 90% 80%, rgba(255, 243, 245, 0.8), transparent 50%);
     background-attachment: fixed;
   }
 }
@@ -19,5 +19,51 @@
   
   .sticker-border {
     filter: drop-shadow(0 0 0 3px white) drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+  }
+
+  .notebook-paper {
+    background: white;
+    background-image: linear-gradient(#fecdd3 1px, transparent 1px);
+    background-size: 100% 2.5rem;
+    position: relative;
+    padding-left: 3rem;
+  }
+
+  .notebook-paper::before {
+    content: '';
+    position: absolute;
+    left: 2rem;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #fecdd3;
+    opacity: 0.5;
+  }
+
+  /* Kawaii High-Fidelity Sliders */
+  .rainbow-range {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 14px;
+    background: linear-gradient(to right, #ffb7c5, #ffdec2, #fffbd1, #d4fce1, #d1e4ff, #e3d1ff);
+    border-radius: 100px;
+    border: 3px solid white;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+    outline: none;
+  }
+
+  .rainbow-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 38px;
+    height: 38px;
+    background: white;
+    border: 6px solid #ffedf0;
+    border-radius: 50% 50% 50% 50% / 12% 12% 88% 88%; /* Soft heart shape attempt */
+    cursor: pointer;
+    box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="%23ff9a9e" viewBox="0 0 256 256"><path d="M240,94c0,70-103.79,126.66-108.21,129a8,8,0,0,1-7.58,0C119.79,220.66,16,164,16,94a62,62,0,0,1,105.8-43.85l6.2,6.2,6.2-6.2A62,62,0,0,1,240,94Z"></path></svg>');
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 50%;
   }
 }

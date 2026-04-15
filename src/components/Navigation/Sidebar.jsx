@@ -1,72 +1,94 @@
 import React from 'react';
-import { motion } from 'framer-motion';
-import { NavLink } from 'react-router-dom';
-import { BookOpen, CalendarBlank, Drop, UsersThree, Gear, House } from '@phosphor-icons/react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { SquaresFour, Drop, CalendarBlank, Sparkle, ChartBar, GearSix, SignOut } from '@phosphor-icons/react';
+import Sticker from '../UI/Sticker';
 
 const Sidebar = () => {
-  // Configured to match our Router paths
+  const navigate = useNavigate();
+
   const navItems = [
-    { name: 'Home', path: '/dashboard', icon: House },
-    { name: 'Journal', path: '/journal', icon: BookOpen },
-    { name: 'Calendar', path: '/calendar', icon: CalendarBlank },
+    { name: 'Dashboard', path: '/dashboard', icon: SquaresFour },
     { name: 'Cycle', path: '/cycle', icon: Drop },
-    { name: 'Community', path: '/community', icon: UsersThree },
-    { name: 'Settings', path: '/settings', icon: Gear },
+    { name: 'Calendar', path: '/calendar', icon: CalendarBlank },
+    { name: 'Analytics', path: '/analytics', icon: ChartBar },
+    { name: 'Habits', path: '/habits', icon: Sparkle },
+    { name: 'Settings', path: '/settings', icon: GearSix },
   ];
 
   return (
-    <motion.div 
-      initial={{ x: -50, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 p-6 z-20"
-    >
-      <div className="glass-panel w-full h-full rounded-ultra flex flex-col pt-8 pb-6 px-4">
-        
-        {/* Brand */}
-        <div className="flex flex-col items-center mb-12">
-          <div className="w-16 h-16 rounded-full bg-kawaii-bg sticker-border flex items-center justify-center mb-3">
-             <Drop weight="duotone" className="text-kawaii-mint w-8 h-8" />
-          </div>
-          <h2 className="font-sticker font-bold text-xl text-gray-800">Dear Luna</h2>
+    <div className="w-[280px] h-[calc(100vh-2rem)] bg-white rounded-[40px] m-4 p-8 flex flex-col relative shadow-soft border-2 border-white/50 backdrop-blur-xl shrink-0 z-20">
+      
+      {/* Decorative Stickers */}
+      <Sticker emoji="🌙" className="-top-3 right-6" rotate={15} style={{ fontSize: '1.5rem', padding: '0.4rem' }} />
+      <Sticker emoji="✨" className="top-16 -right-4" rotate={-10} style={{ fontSize: '1rem', padding: '0.2rem' }} />
+      <Sticker emoji="🤍" className="top-40 -right-6" rotate={20} style={{ fontSize: '1.2rem' }} />
+      <Sticker emoji="🤍" className="top-48 -right-3" rotate={-15} style={{ fontSize: '0.8rem' }} />
+      <Sticker emoji="🐻" className="bottom-40 -right-4" rotate={-25} style={{ fontSize: '1.8rem', padding: '0.5rem' }} />
+      <Sticker emoji="💤" className="bottom-60 -left-4" rotate={10} style={{ fontSize: '1.2rem' }} />
+      <Sticker emoji="🤍" className="bottom-16 -right-2" rotate={15} style={{ fontSize: '1rem' }} />
+      <Sticker emoji="🤎" className="bottom-8 -right-5" rotate={-10} style={{ fontSize: '1.4rem' }} />
+
+      {/* Brand Header */}
+      <div className="flex items-center gap-4 mb-12 relative z-10">
+        <div className="w-12 h-12 rounded-full bg-kawaii-pink flex items-center justify-center shrink-0">
+           <span className="text-xl">🌅</span>
         </div>
-
-        {/* Navigation */}
-        <nav className="flex-1 flex flex-col gap-3">
-          {navItems.map((item) => (
-            <NavLink 
-              key={item.name}
-              to={item.path}
-              className={({ isActive }) => `flex items-center gap-4 px-4 py-3 rounded-2xl transition-all duration-200 ${
-                isActive 
-                  ? 'bg-white shadow-sticker text-kawaii-mint' 
-                  : 'text-gray-500 hover:bg-white/50 hover:text-gray-800'
-              }`}
-            >
-              {({ isActive }) => (
-                <>
-                  <item.icon weight={isActive ? "duotone" : "regular"} className="w-6 h-6" />
-                  <span className="font-semibold text-sm">{item.name}</span>
-                </>
-              )}
-            </NavLink>
-          ))}
-        </nav>
-
-        {/* Bottom User Area */}
-        <div className="mt-auto bg-white/60 rounded-2xl p-3 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-kawaii-sakura/30 overflow-hidden">
-             <div className="w-full h-full bg-kawaii-sakura flex items-center justify-center">
-                 <span className="text-white font-bold">L</span>
-             </div>
-          </div>
-          <div className="text-left flex-1 min-w-0">
-             <p className="text-sm font-bold text-gray-800 truncate">Luna</p>
-             <p className="text-xs text-gray-500 truncate">Free Plan</p>
-          </div>
+        <div className="flex flex-col">
+          <h1 className="text-2xl font-bold font-sticker text-kawaii-earth leading-none">Dear Luna</h1>
+          <p className="text-[10px] font-bold tracking-widest text-kawaii-earthLight uppercase mt-1">Your Daily Glow</p>
         </div>
-
       </div>
-    </motion.div>
+
+      {/* Navigation */}
+      <nav className="flex-1 flex flex-col gap-2 relative z-10">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.name}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-4 px-6 py-4 rounded-full font-medium transition-all duration-300 ${
+                isActive 
+                  ? 'bg-kawaii-pink text-kawaii-earth shadow-[inset_0_2px_4px_rgba(255,255,255,0.5)] border border-white/50' 
+                  : 'text-kawaii-earthLight hover:bg-kawaii-bg'
+              }`
+            }
+          >
+            {({ isActive }) => (
+              <>
+                <item.icon 
+                  weight={isActive ? "fill" : "regular"} 
+                  className={`text-xl ${isActive ? 'text-kawaii-earth' : 'text-kawaii-earthLight'}`} 
+                />
+                <span className="text-base">{item.name}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* User Profile */}
+      <div className="mt-8 pt-6 border-t border-kawaii-bg flex items-center gap-4 relative z-10">
+        <div className="relative">
+          <img 
+            src="https://api.dicebear.com/7.x/notionists/svg?seed=Alex&backgroundColor=E0BBE4" 
+            alt="Alex Rivera" 
+            className="w-12 h-12 rounded-full border-2 border-white shadow-sm"
+          />
+        </div>
+        <div className="flex-1 flex flex-col">
+          <span className="text-sm font-bold text-kawaii-earth">Alex Rivera</span>
+          <span className="text-xs text-kawaii-earthLight font-medium">Pro Member</span>
+        </div>
+        <button 
+          onClick={() => navigate('/login')}
+          className="p-2 text-kawaii-earthLight hover:bg-kawaii-bg rounded-full transition-colors"
+          title="Sign Out"
+        >
+          <SignOut className="text-xl" />
+        </button>
+      </div>
+
+    </div>
   );
 };
 

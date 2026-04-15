@@ -1,6 +1,5 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
-import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -16,11 +15,8 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// Initialize Analytics, but only if supported by the browser (some adblockers block it)
+// Initialize Analytics, but only if supported by the browser
 let analytics = null;
 isSupported().then(yes => yes ? analytics = getAnalytics(app) : null);
 
-// Initialize Firestore Database
-const db = getFirestore(app);
-
-export { app, analytics, db };
+export { app, analytics };
