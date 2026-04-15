@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { SquaresFour, Drop, CalendarBlank, Sparkle, ChartBar, GearSix, SignOut } from '@phosphor-icons/react';
+import { SquaresFour, Drop, CalendarBlank, Sparkle, ChartBar, GearSix, SignOut, ShieldCheck } from '@phosphor-icons/react';
 import Sticker from '../UI/Sticker';
 import { useUserProfile } from '../../context/UserProfileContext';
 import { getAvatarUrl } from '../../utils/kawaiiAvatars';
@@ -17,6 +17,7 @@ const Sidebar = () => {
     { name: 'Calendar',  path: '/calendar',  icon: CalendarBlank },
     { name: 'Habits',    path: '/habits',    icon: Sparkle },
     { name: 'Analytics', path: '/analytics', icon: ChartBar },
+    ...(profile?.role === 'admin' ? [{ name: 'Admin', path: '/admin', icon: ShieldCheck }] : []),
     { name: 'Settings',  path: '/settings',  icon: GearSix },
   ];
 
@@ -68,7 +69,7 @@ const Sidebar = () => {
           transition: 'padding 300ms cubic-bezier(0.4, 0, 0.2, 1)',
           marginBottom: expanded ? '0.5rem' : '0.5rem'
         }}
-        onClick={() => navigate('/dashboard')}
+        onClick={() => navigate('/showcase')}
       >
         {/* Logo circle — always visible */}
         <div className="w-10 h-10 rounded-full bg-kawaii-pink flex items-center justify-center shrink-0">

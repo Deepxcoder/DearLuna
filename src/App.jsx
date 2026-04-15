@@ -15,12 +15,14 @@ import Habits from './pages/Habits';
 import Login from './pages/Login';
 import Analytics from './pages/Analytics';
 import Profile from './pages/Profile';
+import AdminDashboard from './pages/AdminDashboard';
+import Showcase from './pages/Showcase';
 
 const AppLayout = ({ children }) => {
   // Detect device size/aspect ratio and inject CSS scale variables globally
   useDeviceScale();
   const location = useLocation();
-  const isScrollablePage = ['/settings', '/profile'].includes(location.pathname);
+  const isScrollablePage = ['/settings', '/profile', '/showcase'].includes(location.pathname);
 
   return (
     <div className="w-screen h-screen bg-kawaii-bg flex overflow-hidden">
@@ -80,6 +82,8 @@ function App() {
         <Route path="/settings" element={<ProtectedRoute user={user}><Settings /></ProtectedRoute>} />
         <Route path="/profile" element={<ProtectedRoute user={user}><Profile /></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute user={user}><Analytics /></ProtectedRoute>} />
+        <Route path="/admin" element={<ProtectedRoute user={user}><AdminDashboard /></ProtectedRoute>} />
+        <Route path="/showcase" element={<ProtectedRoute user={user}><Showcase /></ProtectedRoute>} />
 
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/login" replace />} />

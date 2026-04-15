@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Sticker from '../components/UI/Sticker';
 import { CaretLeft, CaretRight, Check, Palette } from '@phosphor-icons/react';
@@ -6,6 +7,7 @@ import { AnimatePresence } from 'framer-motion';
 import { useUserProfile } from '../context/UserProfileContext';
 
 const Settings = () => {
+  const navigate = useNavigate();
   const { 
     profile, updateProfile, loading, dailyLog, updateDailyLog, sendTestNotification, 
     verifySmtp 
@@ -242,9 +244,19 @@ const Settings = () => {
                    ))}
                  </div>
                </div>
-               <button className="w-full py-4 bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-2xl font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform">
-                 Customize Stickers <Check size={16} className="inline ml-1" />
-               </button>
+               
+               <div className="flex flex-col gap-3">
+                 <button className="w-full py-4 bg-gradient-to-r from-kawaii-pink to-kawaii-lilac rounded-2xl font-bold text-white shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-transform">
+                   Customize Stickers <Check size={16} className="inline ml-1" />
+                 </button>
+
+                 <button 
+                  onClick={() => navigate('/showcase')}
+                  className="w-full py-4 bg-white border-2 border-kawaii-mint text-kawaii-earth rounded-2xl font-black shadow-sm hover:bg-kawaii-mint/10 transition-all flex items-center justify-center gap-2"
+                >
+                  🚀 Take Feature Tour (Help)
+                </button>
+               </div>
              </div>
 
             {/* NOTIFICATION CENTER */}

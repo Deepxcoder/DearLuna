@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Trophy, Crown, Medal, Notebook, Heartbeat, Bell, Moon, ShieldCheck, 
@@ -268,17 +269,80 @@ const PreferenceToggle = ({ label, icon: Icon, emoji, active, onToggle }) => (
   </button>
 );
 
+// ─── Danger Zone: Delete Account Modal ──────────────────────────────────────
+
+const DeleteConfirmationModal = ({ onConfirm, onClose, loading }) => (
+  <AnimatePresence>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-red-950/20 backdrop-blur-md"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.9, opacity: 0, y: 20 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 20 }}
+        onClick={e => e.stopPropagation()}
+        className="bg-white rounded-[40px] p-10 max-w-md w-full shadow-2xl border-4 border-red-50 text-center flex flex-col items-center gap-6"
+      >
+        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center text-4xl shadow-inner">
+          😿
+        </div>
+        <div>
+          <h2 className="text-2xl font-black text-red-600 mb-2">Saying Goodbye?</h2>
+          <p className="text-sm font-medium text-kawaii-earthLight leading-relaxed">
+            This will permanently delete your celestial profile, cycle history, and all rituals. This action <span className="text-red-500 font-black">cannot be undone</span>.
+          </p>
+        </div>
+        
+        <div className="flex flex-col w-full gap-3 mt-4">
+          <button
+            disabled={loading}
+            onClick={onConfirm}
+            className="w-full py-4 bg-red-500 text-white rounded-2xl font-black text-sm shadow-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Purging data...' : 'Yes, Delete Permanently'}
+          </button>
+          <button
+            onClick={onClose}
+            className="w-full py-4 bg-gray-100 text-kawaii-earth font-black text-sm rounded-2xl hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </motion.div>
+    </motion.div>
+  </AnimatePresence>
+);
+
 // ─── Main Profile Page ─────────────────────────────────────────────────────────
 
 const Profile = () => {
-  const { profile, updateProfile } = useUserProfile();
+  const navigate = useNavigate();
+  const { profile, updateProfile, deleteAccount, isGuest } = useUserProfile();
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const petLevel = profile?.pet?.level ?? 1;
 
   const handleAvatarSelect = async (avatarId) => {
     await updateProfile({ avatarId });
     setShowAvatarPicker(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    const result = await deleteAccount();
+    if (result.success) {
+      navigate('/login');
+    } else {
+      alert(result.message || 'Deletion failed. Please try again.');
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+    }
   };
 
   const journalStats = [
@@ -304,6 +368,15 @@ const Profile = () => {
           petLevel={petLevel}
           onSelect={handleAvatarSelect}
           onClose={() => setShowAvatarPicker(false)}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <DeleteConfirmationModal 
+          onConfirm={handleDeleteAccount}
+          onClose={() => setShowDeleteModal(false)}
+          loading={deleteLoading}
         />
       )}
 
@@ -399,6 +472,7 @@ const Profile = () => {
                     settings: {
                       ...profile.settings,
                       darkTheme: !darkThemeEnabled,
+                      theme: !darkThemeEnabled ? 'Midnight' : 'Sakura'
                     }
                   })}
                 />
@@ -423,6 +497,21 @@ const Profile = () => {
               </div>
             </div>
           </div>
+
+          {/* DANGER ZONE */}
+          {!isGuest && (
+            <div className="mt-8 pt-8 border-t border-red-100 flex flex-col items-center gap-4">
+              <button 
+                onClick={() => setShowDeleteModal(true)}
+                className="text-red-400 hover:text-red-600 font-black text-xs uppercase tracking-widest px-8 py-3 rounded-full border-2 border-red-50 hover:bg-red-50/50 transition-all flex items-center gap-2"
+              >
+                ⚠️ Danger Zone: Delete Account
+              </button>
+              <p className="text-[10px] font-bold text-kawaii-earthLight/60 max-w-xs text-center">
+                Once deleted, your lunar history and pet progress are lost forever.
+              </p>
+            </div>
+          )}
 
         </div>
       </motion.div>

@@ -1,5 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
-import { getAuth, onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { 
+  getAuth, 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  deleteUser,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  updateProfile as updateFirebaseProfile
+} from 'firebase/auth';
 import { app } from '../firebase';
 import { format } from 'date-fns';
 
@@ -136,10 +146,16 @@ export const UserProfileProvider = ({ children }) => {
     });
 
     if (!data) return false;
+    
+    // DEBUG: Inform the user and us about the loaded role
+    if (data.user) {
+      console.info(`%c[DearLuna] Profile Loaded | Email: ${data.user.email} | Role: ${data.user.role}`, "color: #B39DDB; font-weight: bold; font-size: 12px;");
+    }
+
     setProfile(data.user || null);
     setDailyLog(data.dailyLog || null);
     setNeedsPeriodSetup(Boolean(data.user) && !Boolean(data.user.hasSetPeriodDate));
-    return true;
+    return { success: true, isNewUser: data.isNewUser };
   };
 
   // ── Fetch or create today's daily log ────────────────────────────────────
@@ -168,8 +184,8 @@ export const UserProfileProvider = ({ children }) => {
       if (currentUser) {
         setLoading(true);
         try {
-          const bootstrapped = await bootstrapUserData(currentUser, currentDate);
-          if (!bootstrapped) {
+          const result = await bootstrapUserData(currentUser, currentDate);
+          if (!result || !result.success) {
             await Promise.all([
               fetchProfile(currentUser),
               fetchDailyLog(currentUser.uid, currentDate),
@@ -221,19 +237,56 @@ export const UserProfileProvider = ({ children }) => {
   const loginWithGoogle = async () => {
     try {
       setLoading(true);
-      await signInWithPopup(auth, provider);
+      const userCredential = await signInWithPopup(auth, provider);
+      const result = await bootstrapUserData(userCredential.user, currentDate);
+      return result;
     } catch (e) {
       console.error('Login failed', e);
       setLoading(false);
+      return { success: false, message: e.message };
     }
   };
 
-  const loginAsGuest = () => {
+  const loginWithEmail = async (email, password) => {
+    try {
+      setLoading(true);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const result = await bootstrapUserData(userCredential.user, currentDate);
+      return result;
+    } catch (e) {
+      console.error('Email login failed', e);
+      setLoading(false);
+      return { success: false, message: e.message };
+    }
+  };
+
+  const registerWithEmail = async (email, password, name) => {
+    try {
+      setLoading(true);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Update Firebase Profile with name
+      if (name) {
+        await updateFirebaseProfile(userCredential.user, { displayName: name });
+      }
+      const result = await bootstrapUserData(userCredential.user, currentDate);
+      return result;
+    } catch (e) {
+      console.error('Email registration failed', e);
+      setLoading(false);
+      return { success: false, message: e.message };
+    }
+  };
+
+  const loginAsGuest = async () => {
     setLoading(true);
     const guestUser = { uid: 'guest_user', displayName: 'Luna Guest', photoURL: null, isGuest: true };
     setUser(guestUser);
     setIsGuest(true);
     setNeedsPeriodSetup(false);
+    return { success: true, isNewUser: true };
+  };
+
+  const setGuestProfile = () => {
     setProfile({
       name: 'Alex Rivera',
       lastPeriodDate: new Date().toISOString(),
@@ -275,6 +328,46 @@ export const UserProfileProvider = ({ children }) => {
       setNeedsPeriodSetup(false);
     } catch (e) {
       console.error('Logout failed', e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const deleteAccount = async () => {
+    if (!user || isGuest) return { success: false, message: 'Invalid user or guest account' };
+    
+    try {
+      setLoading(true);
+      const uid = user.uid;
+      
+      // 1. Delete from Backend (MongoDB)
+      const res = await fetch(`${API_URL}/users/${uid}`, { method: 'DELETE' });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.error || 'Failed to delete data from server');
+
+      // 2. Delete from Firebase Auth
+      const firebaseUser = auth.currentUser;
+      if (firebaseUser) {
+        await deleteUser(firebaseUser);
+      }
+
+      // 3. Reset State
+      setUser(null);
+      setProfile(null);
+      setDailyLog(null);
+      setIsGuest(false);
+      setNeedsPeriodSetup(false);
+      
+      console.log('✅ Account permanently deleted.');
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Deletion failed:', error);
+      // If firebase deletion fails due to "recent login" requirement, we might need re-auth
+      if (error.code === 'auth/requires-recent-login') {
+        return { success: false, code: 'REQUIRES_RECENT_LOGIN', message: 'Please log out and log back in to verify your identity before deleting your account.' };
+      }
+      return { success: false, message: error.message };
     } finally {
       setLoading(false);
     }
@@ -356,10 +449,27 @@ export const UserProfileProvider = ({ children }) => {
     });
   };
 
+  const fetchAdminUsers = async () => {
+    if (profile?.role !== 'admin') return [];
+    return await safeFetch(`${API_URL}/admin/users`, {
+      method: 'GET',
+      headers: { 'adminuid': user.uid }
+    });
+  };
+
+  const triggerHabitNotification = async (habitName) => {
+    return await safeFetch(`${API_URL}/notify/habit`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uid: user.uid, habitName })
+    });
+  };
+
   return (
     <UserProfileContext.Provider value={{
       user,
       profile,
+      role: profile?.role || 'user',
       dailyLog,
       loading,
       isInitializing,
@@ -377,7 +487,12 @@ export const UserProfileProvider = ({ children }) => {
       needsPeriodSetup,
       setNeedsPeriodSetup,
       sendTestNotification,
-      verifySmtp
+      verifySmtp,
+      fetchAdminUsers,
+      triggerHabitNotification,
+      deleteAccount,
+      loginWithEmail,
+      registerWithEmail
     }}>
       {children}
     </UserProfileContext.Provider>

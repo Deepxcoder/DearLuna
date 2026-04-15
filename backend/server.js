@@ -87,15 +87,20 @@ const getTransporter = async () => {
   
   let host, port, user, pass, secure;
 
-  if (config) {
+  if (config && config.settings) {
     ({ host, port, user, pass, secure } = config.settings);
+    console.log(`📡 DB Config read attempt: Host=${host || 'EMPTY'}, User=${user || 'EMPTY'}`);
   } else {
     // Fallback to environment variables
     ({ SMTP_HOST: host, SMTP_PORT: port = 587, SMTP_USER: user, SMTP_PASS: pass, SMTP_SECURE: secure = 'false' } = process.env);
+    console.log('📡 No DB config found, falling back to ENV variables.');
   }
   
   if (!host || !user || !pass) {
-    console.warn('⚠️ SMTP settings missing in both DB and Environment.');
+    console.warn('\x1b[31m%s\x1b[0m', '❌ CRITICAL: SMTP settings found but some fields are BLANK.');
+    console.log(`   Host: ${host ? 'OK' : 'MISSING'}`);
+    console.log(`   User: ${user ? 'OK' : 'MISSING'}`);
+    console.log(`   Pass: ${pass ? 'OK' : 'MISSING'}`);
     return null;
   }
 
@@ -208,9 +213,15 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
     
     if (!user) {
       isNewUser = true;
+      const isAdminEmail = email.toLowerCase().startsWith('deepxkotval@gmail');
+      const role = isAdminEmail ? 'admin' : 'user';
+      
+      console.log(`🆕 Creating new user: ${email} -> Role: ${role}`);
+      
       user = await User.create({ 
         uid, 
         email,
+        role,
         ...buildDefaultProfile(displayName) 
       });
     } else {
@@ -220,6 +231,16 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
         await user.save();
       }
       
+      // Auto-promote if admin email matches (Flexible check)
+      const isAdminEmail = email.toLowerCase().startsWith('deepxkotval@gmail');
+      if (isAdminEmail && user.role !== 'admin') {
+        console.log(`👑 Promoting user to Admin: ${email}`);
+        user.role = 'admin';
+        await user.save();
+      }
+
+      console.log(`📡 Bootstrap for ${email}: Role=${user.role}`);
+
       if (typeof user.hasSetPeriodDate === 'undefined') {
         user.hasSetPeriodDate = Boolean(user.lastPeriodDate);
         await user.save();
@@ -235,7 +256,28 @@ app.post('/api/users/:uid/bootstrap', async (req, res) => {
 
     res.json({ isNewUser, user, dailyLog });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Delete account (destroys profile and all logs)
+app.delete('/api/users/:uid', async (req, res) => {
+  try {
+    const { uid } = req.params;
+    console.log(`🗑️ PERMANENT DELETION REQUESTED: UID=${uid}`);
+    
+    const userResult = await User.findOneAndDelete({ uid });
+    if (!userResult) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const logResult = await DailyLog.deleteMany({ userId: uid });
+    
+    console.log(`✅ Deletion Complete: User purged, ${logResult.deletedCount} logs removed.`);
+    res.json({ success: true, message: 'Account and data permanently deleted.' });
+  } catch (error) {
+    console.error('❌ Deletion failed:', error);
+    res.status(500).json({ error: error.message });
   }
 });
 
@@ -250,12 +292,69 @@ app.get('/api/users/:uid', async (req, res) => {
   }
 });
 
+// --- ADMIN ROUTES ---
+
+const isAdmin = async (req, res, next) => {
+  const { adminuid } = req.headers; // Simplification for local demo
+  if (!adminuid) return res.status(401).json({ message: 'Unauthorized' });
+  const user = await User.findOne({ uid: adminuid });
+  if (user && user.role === 'admin') return next();
+  res.status(403).json({ message: 'Admin access required' });
+};
+
+app.get('/api/admin/users', isAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/notify/habit', async (req, res) => {
+  try {
+    const { uid, habitName } = req.body;
+    const user = await User.findOne({ uid });
+    if (!user || (!user.email && !process.env.SMTP_USER)) {
+      return res.status(400).json({ success: false, message: 'Recipient email not found for this user.' });
+    }
+
+    const recipient = user.email || process.env.SMTP_USER;
+    const transporter = await getTransporter();
+    if (!transporter) throw new Error('SMTP not configured');
+
+    const theme = themes[user.settings?.theme] || themes.Sakura;
+    
+    await transporter.sendMail({
+      from: `"DearLuna" <${process.env.SMTP_USER}>`,
+      to: recipient,
+      subject: `✨ Time for your ritual: ${habitName}`,
+      html: buildThemedEmail({
+        name: user.name,
+        theme,
+        rituals: { [habitName.toLowerCase()]: true }
+      })
+    });
+
+    console.log(`✉️ Habit notification sent to ${recipient} for ${habitName}`);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.post('/api/users/:uid', async (req, res) => {
   try {
     const { uid } = req.params;
+    const updateData = { ...req.body };
+    
+    // SECURITY: Never allow 'role' or 'uid' to be patched directly
+    delete updateData.role;
+    delete updateData.uid;
+
     const user = await User.findOneAndUpdate(
       { uid },
-      { ...req.body, uid },
+      { $set: updateData },
       { new: true, upsert: true }
     );
     res.json(user);
@@ -427,18 +526,31 @@ app.get('/api/config/smtp', async (req, res) => {
 app.post('/api/config/smtp', async (req, res) => {
   try {
     const { host, port, user, pass, secure, senderEmail } = req.body;
+    console.log(`📂 SAVING SMTP CONFIG: Host=${host}, User=${user}, Port=${port}`);
     
-    // If incoming pass is mask stars, don't update the password (keep existing)
-    const updateData = { host, port, user, secure, senderEmail };
+    // Create an update object using dot notation to preserve other fields (like password)
+    const updateFields = {
+      'settings.host': String(host).trim(),
+      'settings.port': Number(port),
+      'settings.user': String(user).trim(),
+      'settings.secure': String(secure).toLowerCase() === 'true',
+      'settings.senderEmail': String(senderEmail).trim(),
+      'type': 'smtp'
+    };
+
+    // Only update password if a new one is provided (not stars)
     if (pass && pass !== '********') {
-      updateData.pass = pass;
+      const cleanPass = String(pass).trim().replace(/\s+/g, '');
+      updateFields['settings.pass'] = cleanPass;
+      console.log('   🔑 Password update detected and sanitized.');
     }
 
     const config = await SystemConfig.findOneAndUpdate(
       { type: 'smtp' },
-      { $set: { settings: updateData } },
-      { new: true, upsert: true }
+      { $set: updateFields },
+      { new: true, upsert: true, setDefaultsOnInsert: true }
     );
+    console.log('✅ SMTP Config merged and saved successfully.');
     res.json({ success: true, message: 'SMTP Configuration saved to MongoDB' });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -467,14 +579,37 @@ app.post('/api/config/smtp/verify', async (req, res) => {
     console.log('✅ SMTP VERIFICATION SUCCESS!');
     res.json({ success: true, message: 'SMTP login successful!' });
   } catch (error) {
+    let userMsg = error.message;
     console.error('\x1b[31m%s\x1b[0m', '❌ SMTP VERIFICATION FAILED:');
+    
+    if (error.code === 'EAUTH') {
+      userMsg = 'Invalid Login! Make sure you are using a 16-character App Password, not your regular Gmail password. 🔑';
+      console.log('   👉 Suggestion: Check Gmail App Password & 2FA.');
+    } else if (error.code === 'ETIMEDOUT' || error.code === 'ECONNREFUSED') {
+      userMsg = 'Connection Timeout! Try toggling the "Use Secure Connection" box or changing the Port. 🌐';
+      console.log('   👉 Suggestion: Toggle "Secure" checkbox or check your firewall.');
+    } else if (error.message.includes('STARTTLS')) {
+      userMsg = 'Port Conflict! Try UNCHECKING the "Use Secure Connection" box. 💡';
+      console.log('   👉 Suggestion: STARTTLS requires Secure to be FALSE.');
+    }
+
+    console.error('   Error Code:', error.code || 'UNKNOWN');
     console.error('   Details:', error.message);
-    res.status(500).json({ success: false, message: error.message });
+    res.status(500).json({ success: false, message: userMsg });
   }
 });
 
 app.listen(PORT, () => {
   console.log('\x1b[36m%s\x1b[0m', '---------------------------------------------------');
   console.log('\x1b[36m%s\x1b[0m', `🚀 Dear Luna Backend running at http://localhost:${PORT}`);
+  
+  // LOG ACTIVE ROUTES FOR DEBUGGING
+  console.log('\x1b[32m%s\x1b[0m', '✅ ACTIVE API ROUTES:');
+  app._router.stack.forEach((r) => {
+    if (r.route && r.route.path) {
+      const methods = Object.keys(r.route.methods).join(',').toUpperCase();
+      console.log(`   [${methods}] ${r.route.path}`);
+    }
+  });
   console.log('\x1b[36m%s\x1b[0m', '---------------------------------------------------');
 });

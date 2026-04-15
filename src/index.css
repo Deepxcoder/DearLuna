@@ -35,6 +35,38 @@
   }
 }
 
+/* ─── SHOWCASE UTILITIES ─────────────────────────────────────────────── */
+
+.font-showcase {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  color: var(--kawaii-earth);
+  text-shadow: 
+    -3px -3px 0 #fff,
+     3px -3px 0 #fff,
+    -3px  3px 0 #fff,
+     3px  3px 0 #fff,
+     0px  4px 10px rgba(0,0,0,0.1);
+}
+
+@keyframes jiggle {
+  0% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-3deg) scale(1.05); }
+  50% { transform: rotate(3deg) scale(1.05); }
+  75% { transform: rotate(-1deg) scale(1.02); }
+  100% { transform: rotate(0deg) scale(1); }
+}
+
+.animate-jiggle:hover {
+  animation: jiggle 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.showcase-card-gradient {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 209, 220, 0.2) 100%);
+}
+
 /* ─── 1. Sakura Dream (Default) ────────────────────────────────────────── */
 .theme-Sakura {
   /* Inherits from :root */

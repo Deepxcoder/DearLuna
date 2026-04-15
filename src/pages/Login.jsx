@@ -1,30 +1,70 @@
-import React from 'react';
-import { motion } from 'framer-motion';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { Envelope, Lock, User, ArrowLeft, GoogleLogo, Ghost } from '@phosphor-icons/react';
 
 import { useUserProfile } from '../context/UserProfileContext';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { loginWithGoogle, loginAsGuest, loading } = useUserProfile();
+  const { loginWithGoogle, loginAsGuest, loginWithEmail, registerWithEmail, loading } = useUserProfile();
   
+  const [mode, setMode] = useState('social'); // 'social', 'login', 'register'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [error, setError] = useState(null);
+
   const handleGoogleLogin = async (e) => {
     e.preventDefault();
-    await loginWithGoogle();
-    navigate('/dashboard');
+    const result = await loginWithGoogle();
+    if (result && result.success) {
+      if (result.isNewUser) {
+        navigate('/showcase');
+      } else {
+        navigate('/dashboard');
+      }
+    }
   };
 
-  const handleGuestLogin = (e) => {
+  const handleGuestLogin = async (e) => {
     e.preventDefault();
-    loginAsGuest();
-    navigate('/dashboard');
+    const result = await loginAsGuest();
+    if (result && result.success) {
+      if (result.isNewUser) {
+        navigate('/showcase');
+      } else {
+        navigate('/dashboard');
+      }
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError(null);
+    let result;
+
+    if (mode === 'login') {
+      result = await loginWithEmail(email, password);
+    } else {
+      result = await registerWithEmail(email, password, name);
+    }
+
+    if (result.success) {
+      if (result.isNewUser) {
+        navigate('/showcase');
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      setError(result.message);
+    }
   };
 
   return (
     <div className="min-h-screen w-full flex items-center justify-center relative overflow-hidden" 
          style={{ background: 'linear-gradient(to right, #FBC2EB, #E6DEFA, #A8EDEA)' }}>
       
-      {/* Optional: Future background pattern image can go here */}
       <div className="absolute inset-0 opacity-20 pointer-events-none" 
            style={{ backgroundImage: 'radial-gradient(circle, #ffffff 2px, transparent 2px)', backgroundSize: '40px 40px' }} />
 
@@ -32,29 +72,26 @@ const Login = () => {
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 260, damping: 20 }}
-        className="relative z-10 w-full max-w-sm px-4"
+        className="relative z-10 w-full max-w-md px-4"
       >
-        {/* Offset Glass Backing Layer to perfectly match the Stitch screenshot! */}
         <div className="absolute top-3 -left-2 right-6 bottom-[-12px] bg-white/20 border-[6px] border-white/60 rounded-[48px] pointer-events-none backdrop-blur-sm" />
 
-        {/* Main Solid White Card */}
-        <div className="relative bg-white rounded-[48px] px-8 py-16 flex flex-col items-center z-10 shadow-sm">
+        <div className="relative bg-white rounded-[48px] px-8 py-12 flex flex-col items-center z-10 shadow-sm min-h-[500px]">
           
-          {/* Logo Handle - Bubbly Text */}
-          <div className="mb-12 flex flex-col items-center">
-            <h1 className="text-6xl font-black font-sticker tracking-tighter" 
+          <div className="mb-8 flex flex-col items-center cursor-pointer" onClick={() => setMode('social')}>
+            <h1 className="text-5xl font-black font-sticker tracking-tighter" 
                 style={{ 
                   color: '#FF9EB5', 
-                  WebkitTextStroke: '6px white', 
+                  WebkitTextStroke: '4px white', 
                   paintOrder: 'stroke fill',
                   textShadow: '0px 4px 6px rgba(0,0,0,0.1)'
                 }}>
               Dear
             </h1>
-            <h1 className="text-6xl font-black font-sticker tracking-tighter -mt-4" 
+            <h1 className="text-5xl font-black font-sticker tracking-tighter -mt-3" 
                 style={{ 
                   color: '#B39DDB', 
-                  WebkitTextStroke: '6px white', 
+                  WebkitTextStroke: '4px white', 
                   paintOrder: 'stroke fill',
                   textShadow: '0px 4px 6px rgba(0,0,0,0.1)'
                 }}>
@@ -62,39 +99,128 @@ const Login = () => {
             </h1>
           </div>
 
-          <form className="w-full flex flex-col gap-5 items-center">
-            
-            {/* Google Login Button */}
-            <button 
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={loading}
-              className="w-[90%] bg-white hover:scale-[1.02] active:scale-[0.98] transition-transform rounded-full py-4 px-6 flex items-center justify-center gap-3 font-body font-bold text-gray-800 disabled:opacity-50"
-              style={{ boxShadow: '0 0 25px rgba(255, 183, 197, 0.7)' }}
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-              </svg>
-              Login with Google
-            </button>
-            
-            {/* Guest Button */}
-            <button 
-              type="button" 
-              onClick={handleGuestLogin}
-              className="w-[90%] bg-white hover:scale-[1.02] active:scale-[0.98] transition-transform rounded-full py-4 px-6 flex items-center justify-center gap-3 font-body font-bold"
-              style={{ border: '2px solid #D1C4E9', color: '#957DAD' }}
-            >
-              <span className="text-xl leading-none">👻</span>
-              Continue as Guest
-            </button>
+          <AnimatePresence mode="wait">
+            {mode === 'social' ? (
+              <motion.div 
+                key="social"
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: 20, opacity: 0 }}
+                className="w-full flex flex-col gap-4 items-center"
+              >
+                <button 
+                  type="button"
+                  onClick={handleGoogleLogin}
+                  disabled={loading}
+                  className="w-[90%] bg-white hover:scale-[1.02] active:scale-[0.98] transition-transform rounded-2xl py-4 px-6 flex items-center justify-center gap-3 font-body font-black text-gray-800 disabled:opacity-50 border-2 border-pink-100 shadow-sm"
+                >
+                  <GoogleLogo weight="bold" size={24} className="text-[#4285F4]" />
+                  Login with Google
+                </button>
 
-          </form>
+                <button 
+                  type="button" 
+                  onClick={() => setMode('login')}
+                  className="w-[90%] bg-white hover:scale-[1.02] active:scale-[0.98] transition-transform rounded-2xl py-4 px-6 flex items-center justify-center gap-3 font-body font-black text-kawaii-earth border-2 border-indigo-100 shadow-sm"
+                >
+                  <Envelope weight="bold" size={24} className="text-kawaii-lilac" />
+                  Email & Password
+                </button>
+                
+                <button 
+                  type="button" 
+                  onClick={handleGuestLogin}
+                  className="w-[90%] bg-white hover:scale-[1.02] active:scale-[0.98] transition-transform rounded-2xl py-4 px-6 flex items-center justify-center gap-3 font-body font-black text-kawaii-mint border-2 border-purple-50 shadow-sm"
+                >
+                  <Ghost weight="bold" size={24} className="text-kawaii-mint" />
+                  Continue as Guest
+                </button>
+              </motion.div>
+            ) : (
+              <motion.form 
+                key="form"
+                initial={{ x: 20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                exit={{ x: -20, opacity: 0 }}
+                onSubmit={handleSubmit}
+                className="w-full flex flex-col gap-4"
+              >
+                <button 
+                  type="button" 
+                  onClick={() => { setMode('social'); setError(null); }}
+                  className="flex items-center gap-2 text-xs font-black text-kawaii-earthLight hover:text-kawaii-earth mb-2 w-fit transition-colors"
+                >
+                  <ArrowLeft weight="bold" /> Back to options
+                </button>
 
-          {/* Bottom Right Cat Sticker Deco */}
+                <h2 className="text-xl font-black text-kawaii-earth mb-2">
+                  {mode === 'login' ? 'Welcome Back!' : 'Start Your Journey'}
+                </h2>
+
+                {error && (
+                  <div className="bg-red-50 text-red-500 text-[10px] font-black p-3 rounded-xl border border-red-100 text-center uppercase tracking-wider">
+                    {error}
+                  </div>
+                )}
+
+                {mode === 'register' && (
+                  <div className="relative">
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-kawaii-earthLight" weight="bold" />
+                    <input 
+                      type="text"
+                      placeholder="Your First Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full bg-kawaii-bg/50 border-2 border-transparent focus:border-kawaii-pink transition-all outline-none rounded-2xl py-3.5 pl-12 pr-4 font-bold text-sm"
+                    />
+                  </div>
+                )}
+
+                <div className="relative">
+                  <Envelope className="absolute left-4 top-1/2 -translate-y-1/2 text-kawaii-earthLight" weight="bold" />
+                  <input 
+                    type="email"
+                    placeholder="Email Address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full bg-kawaii-bg/50 border-2 border-transparent focus:border-kawaii-lilac transition-all outline-none rounded-2xl py-3.5 pl-12 pr-4 font-bold text-sm"
+                  />
+                </div>
+
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-kawaii-earthLight" weight="bold" />
+                  <input 
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full bg-kawaii-bg/50 border-2 border-transparent focus:border-kawaii-lilac transition-all outline-none rounded-2xl py-3.5 pl-12 pr-4 font-bold text-sm"
+                  />
+                </div>
+
+                <button 
+                  disabled={loading}
+                  className="w-full bg-kawaii-earth text-white rounded-2xl py-4 font-black transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-lg disabled:opacity-50 mt-2"
+                >
+                  {loading ? 'Processing...' : (mode === 'login' ? 'Login' : 'Create Account')}
+                </button>
+
+                <div className="text-center mt-2">
+                  <button 
+                    type="button"
+                    onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
+                    className="text-xs font-black text-kawaii-pink hover:underline uppercase tracking-widest"
+                  >
+                    {mode === 'login' ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+                  </button>
+                </div>
+              </motion.form>
+            )}
+          </AnimatePresence>
+
           <div className="absolute -bottom-6 -right-4 bg-white p-2 rounded-full shadow-md flex items-center justify-center transform rotate-12" style={{ border: '4px solid white' }}>
              <span className="text-5xl leading-none" style={{ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.1))' }}>🐱</span>
              <span className="absolute -top-3 -left-4 text-2xl" style={{ filter: 'drop-shadow(0px 2px 2px rgba(0,0,0,0.1))' }}>✨</span>

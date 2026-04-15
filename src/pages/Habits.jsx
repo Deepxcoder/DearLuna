@@ -485,6 +485,11 @@ const Habits = () => {
     updateDailyLog({ habits: { ...habits, [id]: nextVal } });
     if (nextVal) {
       awardPetProgress(10, 2);
+      // Trigger automated email notification
+      const habit = habitList.find(h => h.id === id);
+      if (habit) {
+        triggerHabitNotification(habit.name);
+      }
     }
   };
 
