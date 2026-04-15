@@ -10,6 +10,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  email: {
+    type: String,
+    default: ''
+  },
   avatarId: {
     type: String,
     default: null    // kawaii avatar id from kawaiiAvatars.js

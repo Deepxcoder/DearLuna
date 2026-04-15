@@ -47,12 +47,26 @@ export const UserProfileProvider = ({ children }) => {
 
   // ── Safe fetch helper ────────────────────────────────────────────────────
   const safeFetch = async (url, options = {}) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000); // 15 second timeout
+
     try {
-      const resp = await fetch(url, options);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      return await resp.json();
-    } catch (e) {
-      console.warn(`[DearLuna API] ${url}:`, e.message);
+      const res = await fetch(url, { ...options, signal: controller.signal });
+      const data = await res.json();
+      clearTimeout(timeout);
+
+      if (!res.ok) {
+        console.warn(`Fetch error for ${url}:`, data);
+        return null;
+      }
+      return data;
+    } catch (err) {
+      clearTimeout(timeout);
+      if (err.name === 'AbortError') {
+        console.error(`Fetch TIMEOUT for ${url}`);
+      } else {
+        console.error(`Network error for ${url}:`, err);
+      }
       return null;
     }
   };
@@ -90,6 +104,7 @@ export const UserProfileProvider = ({ children }) => {
       // First-time user — create in DB
       const newProfile = {
         name: firebaseUser.displayName?.split(' ')[0] || 'Luna User',
+        email: firebaseUser.email || '',
         lastPeriodDate: new Date().toISOString(),
         hasSetPeriodDate: false,
         membership: 'Free Member',
@@ -115,6 +130,7 @@ export const UserProfileProvider = ({ children }) => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         displayName: firebaseUser.displayName || '',
+        email: firebaseUser.email || '',
         date
       }),
     });
@@ -323,11 +339,45 @@ export const UserProfileProvider = ({ children }) => {
     return saved;
   };
 
+  const sendTestNotification = async (recipientEmail = '') => {
+    if (isGuest || !user?.uid) return { success: false, message: 'Must be logged in to send notifications' };
+    return await safeFetch(`${API_URL}/notify/daily/${user.uid}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipientEmail })
+    });
+  };
+
+  const verifySmtp = async (config) => {
+    return await safeFetch(`${API_URL}/config/smtp/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(config)
+    });
+  };
+
   return (
     <UserProfileContext.Provider value={{
-      user, profile, dailyLog, loading, isInitializing, currentDate, isGuest,
-      needsPeriodSetup, setCurrentDate, updateProfile, updateDailyLog, fetchLogRange, setPeriodStartDate,
-      updateLogForDate, loginWithGoogle, loginAsGuest, logout,
+      user,
+      profile,
+      dailyLog,
+      loading,
+      isInitializing,
+      isGuest,
+      currentDate,
+      setCurrentDate,
+      updateProfile,
+      updateDailyLog,
+      fetchLogRange,
+      setPeriodStartDate,
+      updateLogForDate,
+      loginWithGoogle,
+      loginAsGuest,
+      logout,
+      needsPeriodSetup,
+      setNeedsPeriodSetup,
+      sendTestNotification,
+      verifySmtp
     }}>
       {children}
     </UserProfileContext.Provider>

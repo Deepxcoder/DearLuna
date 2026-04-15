@@ -8,6 +8,7 @@ import { getRandomAffirmation } from './utils/affirmations.js';
 import User from './models/User.js';
 import DailyLog from './models/DailyLog.js';
 import Journal from './models/Journal.js';
+import SystemConfig from './models/SystemConfig.js';
 
 const app = express();
 const PORT = 5000;
@@ -46,91 +47,147 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dearlu
 console.log('🔌 Attempting to connect to MongoDB...');
 mongoose.connect(MONGODB_URI)
   .then(() => {
-    console.log('🌙 SUCCESS: Connected to MongoDB (dearluna)');
-    console.log(`📡 DB Host: ${mongoose.connection.host}`);
+    console.log('\x1b[32m%s\x1b[0m', '🌙 SUCCESS: Connected to MongoDB (dearluna)');
   })
   .catch((err) => {
-    console.error('❌ MongoDB CONNECTION ERROR:');
-    console.error(err.message);
-    console.log('⚠️  Make sure MongoDB is running locally (mongod) or provide a valid MONGODB_URI.');
+    console.error('\x1b[31m%s\x1b[0m', '❌ ERROR: Failed to connect to MongoDB!');
+    console.error('   Make sure your local MongoDB server is running (mongod).');
+    console.error('   Error Details:', err.message);
   });
 
 // --- EMAIL NOTIFICATION LOGIC ---
 
-const getTransporter = () => {
-  const { SMTP_HOST, SMTP_PORT = 587, SMTP_USER, SMTP_PASS, SMTP_SECURE = 'false' } = process.env;
+const THEME_PALETTES = {
+  Sakura: {
+    bg: '#FFF5F8', cardBg: '#ffffff', header: 'linear-gradient(135deg, #FFD1DC 0%, #E0BBE4 100%)',
+    primary: '#FFD1DC', accent: '#FFD1DC', text: '#4A3525', subtext: '#7A593E',
+    border: '#FFE4E9', barBg: '#FFF1F4', quoteBg: '#FFF9FA'
+  },
+  Midnight: {
+    bg: '#0F172A', cardBg: '#1E293B', header: 'linear-gradient(135deg, #1E1B4B 0%, #312E81 100%)',
+    primary: '#818CF8', accent: '#6366F1', text: '#F8FAFC', subtext: '#94A3B8',
+    border: '#334155', barBg: '#0F172A', quoteBg: '#1E1B4B',
+    stars: true
+  },
+  Ocean: {
+    bg: '#F0F8FA', cardBg: '#ffffff', header: 'linear-gradient(135deg, #82C0CC 0%, #4CC9F0 100%)',
+    primary: '#4CC9F0', accent: '#82C0CC', text: '#1A3A40', subtext: '#3D5A61',
+    border: '#E0F2F1', barBg: '#E0FBFC', quoteBg: '#F0F8FA'
+  },
+  Forest: {
+    bg: '#F2F4EF', cardBg: '#ffffff', header: 'linear-gradient(135deg, #A3B18A 0%, #344E41 100%)',
+    primary: '#588157', accent: '#A3B18A', text: '#344E41', subtext: '#588157',
+    border: '#E9EDC9', barBg: '#F2F4EF', quoteBg: '#F2F4EF'
+  }
+};
+
+const getTransporter = async () => {
+  // Try to get from Database first
+  let config = await SystemConfig.findOne({ type: 'smtp' });
   
-  if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
-    console.warn('⚠️ SMTP settings missing. Emails will not be sent.');
+  let host, port, user, pass, secure;
+
+  if (config) {
+    ({ host, port, user, pass, secure } = config.settings);
+  } else {
+    // Fallback to environment variables
+    ({ SMTP_HOST: host, SMTP_PORT: port = 587, SMTP_USER: user, SMTP_PASS: pass, SMTP_SECURE: secure = 'false' } = process.env);
+  }
+  
+  if (!host || !user || !pass) {
+    console.warn('⚠️ SMTP settings missing in both DB and Environment.');
     return null;
   }
 
+  // Sanitize: Trim whitespace and remove spaces from App Passwords if present
+  const cleanHost = String(host).trim();
+  const cleanUser = String(user).trim();
+  const cleanPass = String(pass).trim().replace(/\s+/g, '');
+  const isSecure = String(secure).toLowerCase() === 'true';
+
+  console.log(`🔌 Initializing SMTP Transporter: ${cleanHost}:${port} (Secure: ${isSecure}, User: ${cleanUser})`);
+
   return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: Number(SMTP_PORT),
-    secure: String(SMTP_SECURE).toLowerCase() === 'true',
-    auth: { user: SMTP_USER, pass: SMTP_PASS }
+    host: cleanHost,
+    port: Number(port),
+    secure: isSecure,
+    auth: { user: cleanUser, pass: cleanPass },
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 15000
   });
 };
 
 const generateEmailTemplate = (user, dailyLog, affirmation) => {
   const name = user.name || 'Luna User';
+  const themeName = user.settings?.theme || 'Sakura';
+  const theme = THEME_PALETTES[themeName] || THEME_PALETTES.Sakura;
+  
   const rituals = dailyLog?.rituals || { water: 0, meditation: false, exercise: false };
-  const waterProgress = Math.min(100, Math.round((rituals.water / (user.settings?.waterTarget || 2000)) * 100));
+  const waterTarget = user.settings?.waterTarget || 2000;
+  const waterProgress = Math.min(100, Math.round((rituals.water / waterTarget) * 100));
+
+  const starStyle = theme.stars ? `
+    background-image: 
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 40% 25%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 70% 35%, rgba(255,255,255,0.4), transparent),
+      radial-gradient(1px 1px at 90% 85%, rgba(255,255,255,0.4), transparent);
+  ` : '';
 
   return `
-    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #FFF5F8; padding: 40px 20px;">
-      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 50px rgba(255, 183, 197, 0.2); border: 1px solid #FFE4E9;">
+    <div style="font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: ${theme.bg}; padding: 40px 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: ${theme.cardBg}; border-radius: 40px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1); border: 1px solid ${theme.border};">
         <!-- Header -->
-        <div style="background: linear-gradient(135deg, #FFD1DC 0%, #E0BBE4 100%); padding: 40px; text-align: center;">
-          <h1 style="color: #4A3525; margin: 0; font-size: 28px; letter-spacing: -0.5px;">🌙 DearLuna</h1>
-          <p style="color: #4A3525; opacity: 0.8; margin: 10px 0 0; font-weight: 500;">Your Daily Radiance Check-in</p>
+        <div style="background: ${theme.header}; padding: 40px; text-align: center; position: relative; ${starStyle}">
+          <h1 style="color: ${theme.stars ? '#ffffff' : '#4A3525'}; margin: 0; font-size: 28px; letter-spacing: -0.5px;">🌙 DearLuna</h1>
+          <p style="color: ${theme.stars ? '#ffffff' : '#4A3525'}; opacity: 0.8; margin: 10px 0 0; font-weight: 500;">Your Daily Radiance Check-in</p>
         </div>
 
         <!-- Content -->
         <div style="padding: 40px;">
-          <h2 style="color: #4A3525; margin: 0 0 15px; font-size: 24px;">Hi ${name},</h2>
-          <div style="background-color: #FFF9FA; border-left: 4px solid #FFD1DC; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
-            <p style="color: #4A3525; font-style: italic; margin: 0; font-size: 18px; line-height: 1.6;">"${affirmation}"</p>
+          <h2 style="color: ${theme.text}; margin: 0 0 15px; font-size: 24px;">Hi ${name},</h2>
+          <div style="background-color: ${theme.quoteBg}; border-left: 4px solid ${theme.primary}; padding: 20px; border-radius: 12px; margin-bottom: 30px;">
+            <p style="color: ${theme.text}; font-style: italic; margin: 0; font-size: 18px; line-height: 1.6;">"${affirmation}"</p>
           </div>
 
           <!-- Rituals -->
-          <h3 style="color: #7A593E; text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px; margin-bottom: 20px;">Today's Progress</h3>
+          <h3 style="color: ${theme.subtext}; text-transform: uppercase; font-size: 13px; letter-spacing: 1.5px; margin-bottom: 20px;">Today's Progress</h3>
           
           <div style="margin-bottom: 25px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-              <span style="color: #4A3525; font-weight: 600;">💧 Hydration</span>
-              <span style="color: #7A593E; font-size: 13px;">${rituals.water}ml / ${user.settings?.waterTarget || 2000}ml</span>
+              <span style="color: ${theme.text}; font-weight: 600;">💧 Hydration</span>
+              <span style="color: ${theme.subtext}; font-size: 13px;">${rituals.water}ml / ${waterTarget}ml</span>
             </div>
-            <div style="width: 100%; height: 12px; background-color: #FFF1F4; border-radius: 6px; overflow: hidden;">
-              <div style="width: ${waterProgress}%; height: 100%; background-color: #FFD1DC; border-radius: 6px;"></div>
+            <div style="width: 100%; height: 12px; background-color: ${theme.barBg}; border-radius: 6px; overflow: hidden;">
+              <div style="width: ${waterProgress}%; height: 100%; background-color: ${theme.primary}; border-radius: 6px;"></div>
             </div>
           </div>
 
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px;">
-            <div style="background-color: ${rituals.meditation ? '#F2FDF5' : '#FFF9FA'}; border: 1px solid ${rituals.meditation ? '#D1FADF' : '#FFE4E9'}; padding: 15px; border-radius: 20px; text-align: center;">
+            <div style="background-color: ${rituals.meditation ? (theme.stars ? '#1e293b' : '#f8fafc') : theme.quoteBg}; border: 1px solid ${theme.border}; padding: 15px; border-radius: 20px; text-align: center;">
               <div style="font-size: 24px; margin-bottom: 5px;">🧘</div>
-              <div style="color: #4A3525; font-size: 13px; font-weight: 600;">Meditation</div>
-              <div style="color: #7A593E; font-size: 11px;">${rituals.meditation ? 'Completed!' : 'Not yet logged'}</div>
+              <div style="color: ${theme.text}; font-size: 13px; font-weight: 600;">Meditation</div>
+              <div style="color: ${theme.subtext}; font-size: 11px;">${rituals.meditation ? 'Completed!' : 'Not yet logged'}</div>
             </div>
-            <div style="background-color: ${rituals.exercise ? '#F2FDF5' : '#FFF9FA'}; border: 1px solid ${rituals.exercise ? '#D1FADF' : '#FFE4E9'}; padding: 15px; border-radius: 20px; text-align: center;">
+            <div style="background-color: ${rituals.exercise ? (theme.stars ? '#1e293b' : '#f8fafc') : theme.quoteBg}; border: 1px solid ${theme.border}; padding: 15px; border-radius: 20px; text-align: center;">
               <div style="font-size: 24px; margin-bottom: 5px;">🏃</div>
-              <div style="color: #4A3525; font-size: 13px; font-weight: 600;">Excercise</div>
-              <div style="color: #7A593E; font-size: 11px;">${rituals.exercise ? 'Completed!' : 'Not yet logged'}</div>
+              <div style="color: ${theme.text}; font-size: 13px; font-weight: 600;">Excercise</div>
+              <div style="color: ${theme.subtext}; font-size: 11px;">${rituals.exercise ? 'Completed!' : 'Not yet logged'}</div>
             </div>
           </div>
 
           <div style="text-align: center;">
-            <a href="http://localhost:5173" style="display: inline-block; background: linear-gradient(135deg, #FFD1DC 0%, #E0BBE4 100%); color: #4A3525; text-decoration: none; padding: 18px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 25px rgba(255, 183, 197, 0.4);">
+            <a href="http://localhost:5173" style="display: inline-block; background: ${theme.header}; color: ${theme.stars ? '#ffffff' : '#4A3525'}; text-decoration: none; padding: 18px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
               Go to Dashboard
             </a>
           </div>
         </div>
 
         <!-- Footer -->
-        <div style="background-color: #FBFBFF; padding: 30px; text-align: center; border-top: 1px solid #F0F0FF;">
-          <p style="color: #7A593E; font-size: 12px; margin: 0;">Sent with love from DearLuna</p>
-          <p style="color: #A0A0A0; font-size: 11px; margin: 10px 0 0;">You received this because you're a member of the DearLuna community.</p>
+        <div style="background-color: ${theme.stars ? '#0F172A' : '#FBFBFF'}; padding: 30px; text-align: center; border-top: 1px solid ${theme.border};">
+          <p style="color: ${theme.subtext}; font-size: 12px; margin: 0;">Sent with love from DearLuna</p>
+          <p style="color: ${theme.subtext}; opacity: 0.6; font-size: 11px; margin: 10px 0 0;">You received this because you're a member of the DearLuna community.</p>
         </div>
       </div>
     </div>
@@ -143,18 +200,30 @@ const generateEmailTemplate = (user, dailyLog, affirmation) => {
 app.post('/api/users/:uid/bootstrap', async (req, res) => {
   try {
     const { uid } = req.params;
-    const { displayName = '', date } = req.body;
+    const { displayName = '', email = '', date } = req.body;
     const todayDate = date || new Date().toISOString().slice(0, 10);
 
     let user = await User.findOne({ uid });
     let isNewUser = false;
+    
     if (!user) {
       isNewUser = true;
-      user = await User.create({ uid, ...buildDefaultProfile(displayName) });
-    } else if (typeof user.hasSetPeriodDate === 'undefined') {
-      // Backfill legacy users so existing accounts aren't blocked by onboarding
-      user.hasSetPeriodDate = Boolean(user.lastPeriodDate);
-      await user.save();
+      user = await User.create({ 
+        uid, 
+        email,
+        ...buildDefaultProfile(displayName) 
+      });
+    } else {
+      // Sync email if provided and different
+      if (email && user.email !== email) {
+        user.email = email;
+        await user.save();
+      }
+      
+      if (typeof user.hasSetPeriodDate === 'undefined') {
+        user.hasSetPeriodDate = Boolean(user.lastPeriodDate);
+        await user.save();
+      }
     }
 
     const baseLog = buildDefaultDailyLog(todayDate);
@@ -279,36 +348,133 @@ app.post('/api/notify/daily/:uid', async (req, res) => {
     // Fallback log if none exists for today
     const currentLog = dailyLog || buildDefaultDailyLog(todayDate);
 
-    const transporter = getTransporter();
+    const transporter = await getTransporter();
     if (!transporter) {
       return res.status(503).json({ message: 'SMTP service not configured in backend' });
     }
 
+    const { recipientEmail } = req.body;
+    
+    const config = await SystemConfig.findOne({ type: 'smtp' });
     const { EMAIL_FROM, EMAIL_TO } = process.env;
-    const targetEmail = EMAIL_TO || user.email; // Fallback to env default or user's email if we had it
+
+    const senderEmail = config?.settings?.senderEmail || EMAIL_FROM || '"DearLuna" <no-reply@dearluna.app>';
+    
+    // Priority: 1. Body Override, 2. Manual ENV, 3. User profile email, 4. Fallback to SMTP sender
+    const targetEmail = recipientEmail || EMAIL_TO || user.email || config?.settings?.user; 
+
+    console.log('🔍 DEARLUNA DEBUG: Recipient Search');
+    console.log(`   - Body Override: ${recipientEmail || 'none'}`);
+    console.log(`   - User Profile:  ${user.email || 'empty'}`);
+    console.log(`   - SMTP Config:  ${config?.settings?.user || 'empty'}`);
+    console.log(`   - Final Target: ${targetEmail || 'NULL'}`);
 
     if (!targetEmail) {
-      return res.status(400).json({ message: 'No recipient email found for this user.' });
+      console.error('❌ NO RECIPIENT FOUND - Aborting Send');
+      return res.status(400).json({ message: 'No recipient email found. Please provide one in the test box or your profile.' });
     }
 
     const affirmation = getRandomAffirmation(user.name);
     const htmlBody = generateEmailTemplate(user, currentLog, affirmation);
 
+    console.log(`📧 Attempting to send trial email to: ${targetEmail}...`);
+
     const info = await transporter.sendMail({
-      from: EMAIL_FROM || '"DearLuna" <no-reply@dearluna.app>',
+      from: senderEmail,
       to: targetEmail,
       subject: `🌙 Morning Glow: A message for you, ${user.name || 'Luna'}!`,
       text: `Hi ${user.name}, here is your daily affirmation: ${affirmation}. Time to track your rituals!`,
       html: htmlBody,
     });
 
+    console.log('✅ Email sent successfully! MessageID:', info.messageId);
     res.json({ success: true, messageId: info.messageId });
   } catch (error) {
-    console.error('Email error:', error);
+    console.error('\x1b[31m%s\x1b[0m', '❌ NOTIFICATION ERROR:');
+    console.error('   Details:', error.message);
+    if (error.code === 'EAUTH') {
+      console.error('   Tip: Check your Username and App Password. Ensure 2FA is on for Gmail.');
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+      console.error('   Tip: Check your SMTP Host and Port. For Port 587, Secure Connection should be OFF.');
+    }
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// --- CONFIG ROUTES ---
+
+app.get('/api/config/smtp', async (req, res) => {
+  try {
+    let config = await SystemConfig.findOne({ type: 'smtp' });
+    if (!config) {
+      // Return env defaults if no DB config exists yet
+      return res.json({
+        host: process.env.SMTP_HOST || '',
+        port: process.env.SMTP_PORT || 587,
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS ? '********' : '', // Mask password
+        secure: process.env.SMTP_SECURE === 'true',
+        senderEmail: process.env.EMAIL_FROM || 'no-reply@dearluna.app'
+      });
+    }
+    const masked = { ...config.settings, pass: '********' };
+    res.json(masked);
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
+app.post('/api/config/smtp', async (req, res) => {
+  try {
+    const { host, port, user, pass, secure, senderEmail } = req.body;
+    
+    // If incoming pass is mask stars, don't update the password (keep existing)
+    const updateData = { host, port, user, secure, senderEmail };
+    if (pass && pass !== '********') {
+      updateData.pass = pass;
+    }
+
+    const config = await SystemConfig.findOneAndUpdate(
+      { type: 'smtp' },
+      { $set: { settings: updateData } },
+      { new: true, upsert: true }
+    );
+    res.json({ success: true, message: 'SMTP Configuration saved to MongoDB' });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/api/config/smtp/verify', async (req, res) => {
+  try {
+    const { host, port, user, pass, secure } = req.body;
+    
+    console.log(`🔌 VERIFYING SMTP: ${host}:${port} (User: ${user})`);
+    
+    const cleanPass = String(pass).trim().replace(/\s+/g, '');
+    
+    // For verify, we use a very short timeout
+    const testTransporter = nodemailer.createTransport({
+      host: String(host).trim(),
+      port: Number(port),
+      secure: String(secure).toLowerCase() === 'true',
+      auth: { user: String(user).trim(), pass: cleanPass },
+      connectionTimeout: 5000, // 5 seconds
+      greetingTimeout: 5000
+    });
+
+    await testTransporter.verify();
+    console.log('✅ SMTP VERIFICATION SUCCESS!');
+    res.json({ success: true, message: 'SMTP login successful!' });
+  } catch (error) {
+    console.error('\x1b[31m%s\x1b[0m', '❌ SMTP VERIFICATION FAILED:');
+    console.error('   Details:', error.message);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Dear Luna Backend running at http://localhost:${PORT}`);
+  console.log('\x1b[36m%s\x1b[0m', '---------------------------------------------------');
+  console.log('\x1b[36m%s\x1b[0m', `🚀 Dear Luna Backend running at http://localhost:${PORT}`);
+  console.log('\x1b[36m%s\x1b[0m', '---------------------------------------------------');
 });
