@@ -18,7 +18,9 @@ const Sidebar = () => {
     ? [
         { name: 'Dashboard',       path: '/admin?view=dashboard', icon: ChartLineUp },
         { name: 'User Management',  path: '/admin?view=users',     icon: Users },
-        { name: 'Settings',  path: '/settings',  icon: GearSix },
+        { name: 'SMTP Engine',      path: '/admin?view=smtp',      icon: EnvelopeSimple },
+        { name: 'System Settings',  path: '/admin?view=settings',  icon: Gear },
+        { name: 'Profile Settings', path: '/settings',            icon: GearSix },
       ]
     : [
         { name: 'Dashboard', path: '/dashboard', icon: SquaresFour },
