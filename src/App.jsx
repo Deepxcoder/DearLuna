@@ -54,7 +54,9 @@ const ProtectedRoute = ({ user, children }) => {
   // Admins bypass all setup barriers
   if (role === 'admin') return <AppLayout>{children}</AppLayout>;
   
-  if (needsPeriodSetup && location.pathname !== '/dashboard') {
+  // Allow access to settings and cycle even if setup is needed
+  const allowedPaths = ['/dashboard', '/settings', '/cycle'];
+  if (needsPeriodSetup && !allowedPaths.includes(location.pathname)) {
     return <Navigate to="/dashboard" replace />;
   }
   return <AppLayout>{children}</AppLayout>;

@@ -373,8 +373,8 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* BOTTOM SECTION: RITUALS + REFLECTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6 w-full z-10 relative">
+      {/* BOTTOM SECTION: RITUALS */}
+      <div className="w-full z-10 relative">
         {/* RITUALS */}
         <div className="flex flex-col">
            <h3 className="ui-text-lg font-bold text-kawaii-earth ui-mb-4">Daily Rituals</h3>
@@ -445,23 +445,6 @@ const Dashboard = () => {
                </div>
 
              </div>
-           </div>
-        </div>
-
-        {/* DAILY REFLECTION */}
-        <div className="flex flex-col">
-           <h3 className="ui-text-lg font-bold text-kawaii-earth ui-mb-4">Reflection</h3>
-           <div className="bg-yellow-100/60 backdrop-blur-sm rounded-[32px] p-4 border-2 border-white/50 shadow-sm relative overflow-hidden flex-1 min-h-[100px]">
-              <textarea 
-                value={activeLog.reflection || ''}
-                onChange={(e) => {
-                  updateDailyLog({ reflection: e.target.value });
-                  triggerPetAction('writing');
-                }}
-                className="w-full h-full bg-transparent border-none outline-none text-kawaii-earth font-medium placeholder-kawaii-earthLight/60 resize-none text-sm leading-relaxed"
-                placeholder="How are you feeling today?"
-              />
-              <Sticker emoji="✍️" className="bottom-2 right-2" rotate={10} style={{ fontSize: '1.5rem' }} />
            </div>
         </div>
       </div>
