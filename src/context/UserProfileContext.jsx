@@ -14,7 +14,7 @@ import { app } from '../firebase';
 import { format } from 'date-fns';
 
 const UserProfileContext = createContext(null);
-const API_URL = 'http://localhost:5000/api';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 const auth = getAuth(app);
 const provider = new GoogleAuthProvider();

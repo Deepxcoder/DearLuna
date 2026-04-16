@@ -11,7 +11,7 @@ import Journal from './models/Journal.js';
 import SystemConfig from './models/SystemConfig.js';
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
@@ -183,7 +183,7 @@ const generateEmailTemplate = (user, dailyLog, affirmation) => {
           </div>
 
           <div style="text-align: center;">
-            <a href="http://localhost:5173" style="display: inline-block; background: ${theme.header}; color: ${theme.stars ? '#ffffff' : '#4A3525'}; text-decoration: none; padding: 18px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}" style="display: inline-block; background: ${theme.header}; color: ${theme.stars ? '#ffffff' : '#4A3525'}; text-decoration: none; padding: 18px 40px; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
               Go to Dashboard
             </a>
           </div>
