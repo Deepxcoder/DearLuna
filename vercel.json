@@ -1,7 +1,8 @@
 {
     "experimentalServices": {
         "frontend": {
-            "framework": "vite"
+            "framework": "vite",
+            "routePrefix": "/"
         },
         "backend": {
             "entrypoint": "backend",
